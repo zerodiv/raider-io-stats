@@ -37,8 +37,10 @@ class Downloader extends Base
 
             echo "downloaded page=$p\n";
 
-            echo "sleeping...\n";
-            sleep(mt_rand(1, 300));
+            // sleep for a bit, don't break raider.io
+            $sleepAmt = mt_rand(1, 60);
+            echo "sleeping($sleepAmt)...\n";
+            sleep($sleepAmt);
 
         }
 
