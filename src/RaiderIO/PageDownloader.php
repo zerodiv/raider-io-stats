@@ -1,0 +1,81 @@
+<?php
+
+namespace RaiderIO;
+
+class PageDownloader
+{
+    private string $_url;
+    private string $_needsDownload;
+    private string $_contentFile;
+
+    public function __construct(string $url, string $statusFile, string $contentFile)
+    {
+        $this->_url = $url;
+        $this->_statusFile = $statusFile;
+        $this->_contentFile = $contentFile;
+    }
+
+    public function needsDownload(): bool
+    {
+        var_dump($this->_statusFile);
+        if (is_file($this->_statusFile)) {
+            $statusContents = file_get_contents($this->_statusFile);
+
+            $value = intval($statusContents);
+
+            // we only hit them once a week per url.
+            $timeout = time() - (86400*5);
+
+            if ($value > $timeout) {
+                return false;
+            }
+
+            // the file has timed out.
+            unlink($this->_statusFile);
+            unlink($this->_contentFile);
+        }
+        
+        // no status file.
+        return true;
+    }
+
+    public function downloadPage(): bool
+    {
+        $ch = curl_init();
+
+        curl_setopt(
+            $ch,
+            CURLOPT_USERAGENT,
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3983.2 Safari/537.36'
+        );
+        curl_setopt($ch, CURLOPT_URL, $this->_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        //curl_setopt($ch, CURLOPT_VERBOSE , true);
+        $urlContents = curl_exec($ch);
+
+        // var_dump($urlContents);
+
+        curl_close($ch);
+
+        $raw = json_decode($urlContents, true);
+
+        if (is_array($raw)) {
+            $fpc = file_put_contents($this->_contentFile, $urlContents);
+            $sfpc = file_put_contents($this->_statusFile, time());
+
+            if ($fpc != false && $sfpc != false) {
+                return true;
+            }
+        }
+
+        if (is_file($this->_contentFile)) {
+            unlink($this->_contentFile);
+        }
+        
+        if (is_file($this->_statusFile)) {
+            unlink($this->_statusFile);
+        }
+
+        return false;
+    }
+}
