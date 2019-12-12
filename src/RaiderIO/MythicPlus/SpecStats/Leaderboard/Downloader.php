@@ -8,7 +8,7 @@ use \Exception;
 
 class Downloader extends Base
 {
-    const NUMBER_OF_PAGES = 100;
+    const NUMBER_OF_PAGES = 500;
 
     public function download(): bool
     {
@@ -30,21 +30,16 @@ class Downloader extends Base
                 $p
             );
         
-            var_dump($url);
-
             $pdl = new PageDownloader($url, $pageStatusFile, $pageFile);
 
             if ($pdl->needsDownload() !== true) {
-                echo "  does not need download\n";
                 continue;
             }
 
+            echo "url=$url\n";
             echo "  needs download\n";
             if ($pdl->downloadPage() === true) {
-                // sleep for a bit, don't break raider.io
-                $sleepAmt = mt_rand(1, 30);
-                echo "sleeping($sleepAmt)...\n";
-                sleep($sleepAmt);
+                $this->doSleep('downloaded leaderboard page');
             }
         }
 

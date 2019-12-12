@@ -17,7 +17,7 @@ class PageDownloader
 
     public function needsDownload(): bool
     {
-        var_dump($this->_statusFile);
+        // var_dump($this->_statusFile);
         if (is_file($this->_statusFile)) {
             $statusContents = file_get_contents($this->_statusFile);
 
@@ -60,10 +60,22 @@ class PageDownloader
         $raw = json_decode($urlContents, true);
 
         if (is_array($raw)) {
+            if (array_key_exists('statusCode', $raw)) {
+                $statusCode = intval($raw['statusCode']);
+                if ($statusCode == 400) {
+                    // api didn't let us download this url.
+                    echo "failed to download, please debug url\n";
+                    var_dump($this->_url);
+                    exit();
+                    return false;
+                }
+            }
+
             $fpc = file_put_contents($this->_contentFile, $urlContents);
             $sfpc = file_put_contents($this->_statusFile, time());
 
             if ($fpc != false && $sfpc != false) {
+                echo "  download - OK!\n";
                 return true;
             }
         }

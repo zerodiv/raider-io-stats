@@ -33,9 +33,7 @@ class DownloadCharacters extends Base
             $path = $character['path'];
         
             if ($this->downloadCharacter($id, $persona_id, $path) === true) {
-                $sleepAmt = mt_rand(1, 30);
-                echo "sleeping ($sleepAmt)...\n";
-                sleep($sleepAmt);
+                $this->doSleep('downloadedCharacter');
             }
         }
     }
@@ -70,24 +68,33 @@ class DownloadCharacters extends Base
 
         // https://raider.io/api/characters/us/sargeras/Mixeleina?season=season-bfa-3&tier=24
         // https://raider.io/characters/us/whisperwind/Emeeana#season=season-bfa-3
+
+        // By default the path isn't url safe, we need to encode it properly to support some of the utf-8 characters.
+        // grab the char name off the end of the path.
+        $pathBits = explode('/', $path);
+        $characterName = array_pop($pathBits);
+
+        // var_dump($path);
+
+        $path = str_replace(
+            $characterName,
+            urlencode($characterName),
+            $path
+        );
+
+        // var_dump($path);
+
         $url = sprintf(
             'https://raider.io/api%s#season=%s',
             $path,
             $this->getSeason()
         );
 
-        var_dump($url);
+        //var_dump($url);
 
-        $tmpDir = $this->getTmpDir();
-        $tmpDir .= DIRECTORY_SEPARATOR . 'characters';
-        $tmpDir .= DIRECTORY_SEPARATOR . ($id % 10000);
-        $tmpDir .= DIRECTORY_SEPARATOR . ($persona_id % 10000);
+        $tmpDir = $this->getCharacterTmpDir($id, $persona_id);
         
-        var_dump($tmpDir);
-
-        if (! is_dir($tmpDir)) {
-            mkdir($tmpDir, 0755, true);
-        }
+        //var_dump($tmpDir);
 
         $rootFile = $tmpDir . DIRECTORY_SEPARATOR . $id . '-' . $persona_id;
 
@@ -97,10 +104,11 @@ class DownloadCharacters extends Base
         $pdl = new PageDownloader($url, $statusFile, $contentFile);
 
         if ($pdl->needsDownload() !== true) {
-            echo "  does not need download\n";
+            // echo "  does not need download\n";
             return false;
         }
 
+        echo "url=$url\n";
         echo "  downloading\n";
         return $pdl->downloadPage();
     }
