@@ -111,8 +111,8 @@ class Base
     public function doSleep(string $reason)
     {
         //$sleepAmt = mt_rand(1, 5);
-        $sleepAmt = 1;
-        echo "reason=$reason sleeping ($sleepAmt)...\n";
-        sleep($sleepAmt);
+        // $sleepAmt = 1;
+        // echo "reason=$reason sleeping ($sleepAmt)...\n";
+        // sleep($sleepAmt);
     }
 }

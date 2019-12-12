@@ -8,11 +8,18 @@ class PageDownloader
     private string $_needsDownload;
     private string $_contentFile;
 
+    private string $_requestHourMin;
+    private int $_requestDone;
+
+    const REQUEST_LIMIT = 120;
+
     public function __construct(string $url, string $statusFile, string $contentFile)
     {
         $this->_url = $url;
         $this->_statusFile = $statusFile;
         $this->_contentFile = $contentFile;
+        $this->_requestHourMin = date('Hi');
+        $this->_requestDone = 0;
     }
 
     public function needsDownload(): bool
@@ -41,6 +48,22 @@ class PageDownloader
 
     public function downloadPage(): bool
     {
+        $currentHourMin = date('Hi');
+
+        // are we on a new minute?
+        if ($currentHourMin != $this->_requestHourMin) {
+            $this->_requestDone = 0;
+            $this->_requestHourMin = $currentHourMin;
+        }
+
+        $this->_requestDone++;
+
+        if ($this->_requestDone >= self::REQUEST_LIMIT) {
+            $sleepAmt = mt_rand(1, 10);
+            echo "  rateLimit sleepAmt($sleepAmt)\n";
+            sleep($sleepAmt);
+        }
+
         $ch = curl_init();
 
         curl_setopt(
