@@ -89,7 +89,7 @@ class PageDownloader
                     // api didn't let us download this url.
                     echo "failed to download, please debug url\n";
                     var_dump($this->_url);
-                    exit();
+                    var_dump($raw);
                     return false;
                 }
             }

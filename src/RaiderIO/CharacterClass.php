@@ -5,10 +5,60 @@ namespace RaiderIO;
 class CharacterClass
 {
     private static $_classSpecs = array(
+        'death-knight' => array(
+            'blood' => true,
+            'frost' => true,
+            'unholy' => true,
+        ),
+        'demon-hunter' => array(
+            'havoc' => true,
+            'vengeance' => true,
+        ),
+        'druid' => array(
+            'balance' => true,
+            'feral' => true,
+            'guardian' => true,
+            'restoration' => true
+        ),
+        'hunter' => array(
+            'beast-mastery' => true,
+            'marksmanship' => true,
+            'survival' => true,
+        ),
         'mage' => array(
-            'arcane' => 62,
-            'fire' => 63,
-            'frost' => 64
+            'arcane' => true,
+            'fire' => true,
+            'frost' => true
+        ),
+        'monk' => array(
+            'brewmaster' => true,
+            'windwalker' => true,
+            'mistweaver' => true
+        ),
+        'paladin' => array(
+            'holy'          => true,
+            'protection'    => true,
+            'retribution'   => true,
+        ),
+        'priest' => array(
+            'discipline'    => true,
+            'holy'          => true,
+            'shadow'        => true,
+        ),
+        'rogue' => array(
+            'assassination' => true,
+            'outlaw' => true,
+            'subtlety' => true,
+        ),
+        'shaman' => array(
+            'elemental' => true,
+            'enhancement' => true,
+            'restoration' => true
+        ),
+        'warlock' => array(
+            'affliction' => true,
+            'demonology' => true,
+            'destruction' => true
         ),
         'warrior' => array(
             'arms' => true,

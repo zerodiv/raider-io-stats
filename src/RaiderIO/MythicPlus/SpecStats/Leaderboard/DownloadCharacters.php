@@ -65,7 +65,10 @@ class DownloadCharacters extends Base
 
     public function downloadCharacter(int $id, int $persona_id, string $path): bool
     {
-
+        if ($path == '') {
+            return false;
+        }
+        
         // https://raider.io/api/characters/us/sargeras/Mixeleina?season=season-bfa-3&tier=24
         // https://raider.io/characters/us/whisperwind/Emeeana#season=season-bfa-3
 
@@ -109,7 +112,7 @@ class DownloadCharacters extends Base
         }
 
         echo "url=$url\n";
-        echo "  downloading\n";
+        echo "  downloading to=$contentFile\n";
         return $pdl->downloadPage();
     }
 
