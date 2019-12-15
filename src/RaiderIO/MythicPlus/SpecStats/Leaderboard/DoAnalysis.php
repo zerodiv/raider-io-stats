@@ -3,7 +3,8 @@
 namespace RaiderIO\MythicPlus\SpecStats\Leaderboard;
 
 use RaiderIO\MythicPlus\SpecStats\Leaderboard\Base;
-use RaiderIO\MythicPlus\SpecStats\Leaderboard\TalentStats;
+use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\MythicPlusScores;
+use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\TalentStats;
 use RaiderIO\CharacterClass;
 
 class DoAnalysis extends Base
@@ -12,6 +13,7 @@ class DoAnalysis extends Base
     private int $_characters;
     private int $_unavailable;
     private TalentStats $_talentStats;
+    private MythicPlusScores $_mythicPlusScores;
 
     public function __construct(string $season, string $region, string $class, string $spec)
     {
@@ -21,8 +23,34 @@ class DoAnalysis extends Base
         $this->_characters = 0;
         $this->_unavailable = 0;
         $this->_talentStats = new TalentStats();
+        $this->_mythicPlusScores = new MythicPlusScores();
     }
 
+    public function getPossibleCount(): int
+    {
+        return $this->_possible;
+    }
+    
+    public function getCharacterCount(): int
+    {
+        return $this->_characters;
+    }
+
+    public function getUnavailableCount(): int
+    {
+        return $this->_unavailable;
+    }
+
+    public function getTalentStats(): TalentStats
+    {
+        return $this->_talentStats;
+    }
+
+    public function getMythicPlusStats(): MythicPlusScores
+    {
+        return $this->_mythicPlusScores;
+    }
+    
     public function crunchNumbers(): void
     {
         $tmpDir = $this->getTmpDir();
@@ -45,53 +73,6 @@ class DoAnalysis extends Base
             $this->walkJsonStructure($js);
         }
 
-        echo sprintf(
-            "season=%s region=%s class=%s spec=%s\n",
-            $this->getSeason(),
-            $this->getRegion(),
-            $this->getClass(),
-            $this->getSpec()
-        );
-
-        echo sprintf(
-            "  characters=%d (%d%%) unavailable=%d (%d%%) possible=%d\n",
-            $this->_characters,
-            $this->calculatePct($this->_characters, $this->_possible),
-            $this->_unavailable,
-            $this->calculatePct($this->_unavailable, $this->_possible),
-            $this->_possible
-        );
-        
-        $talentStats = $this->_talentStats->getTalentStats($this->getClass(), $this->getSpec());
-
-        $talents = CharacterClass::getTalentsForClassSpec($this->getClass(), $this->getSpec());
-
-        $talentCount = $this->_talentStats->getCharacterCount();
-        echo "Talents distribution ($talentCount): \n";
-        
-        $col = 0;
-        $row = '';
-        foreach ($talents as $spellId) {
-            $col++;
-
-            if ($row != '') {
-                $row .= ' | ';
-            }
-
-
-            $row .= sprintf(
-                '%10d: %-10d (%3d%%)',
-                $spellId,
-                $talentStats[$spellId],
-                $this->calculatePct($talentStats[$spellId], $talentCount)
-            );
-
-            if ($col == 3) {
-                echo $row . "\n";
-                $row = '';
-                $col = 0;
-            }
-        }
         
 
         // var_dump($talentStats);
@@ -206,16 +187,24 @@ class DoAnalysis extends Base
 
         // verify we are processing the right class.
         if (array_key_exists('class', $character)) {
-            if (strtolower($character['class']['name']) != $this->getClass()) {
+            $className = $character['class']['name'];
+            $className = strtolower($className);
+            $className = str_replace(' ', '-', $className);
+            if ($className != $this->getClass()) {
                 // wrong class.
+                //var_dump($className);
                 return false;
             }
         }
 
         // verify we are processing the right spec.
         if (array_key_exists('spec', $character)) {
-            if (strtolower($character['spec']['name']) != $this->getSpec()) {
+            $specName = $character['spec']['name'];
+            $specName = strtolower($specName);
+            $specName = str_replace(' ', '-', $specName);
+            if ($specName != $this->getSpec()) {
                 // wrong spec
+                //var_dump($specName);
                 return false;
             }
         }
@@ -225,7 +214,25 @@ class DoAnalysis extends Base
             return false;
         }
 
-        return $this->handleTalentDetails($character['talentsDetails']);
+        if ($this->handleTalentDetails($character['talentsDetails']) !== true) {
+            return false;
+        }
+
+        if (array_key_exists('mythicPlusScores', $details) !== true) {
+            echo "  failed to find mythicPlusScores contentFile=$contentFile\n";
+            return false;
+        }
+
+        return $this->handleMythicPlusScores(
+            $this->getClass(),
+            $this->getSpec(),
+            $details['mythicPlusScores']
+        );
+    }
+
+    public function handleMythicPlusScores(string $class, string $spec, array $mythicPlusScores): bool
+    {
+        return $this->_mythicPlusScores->processMythicPlusStack($class, $spec, $mythicPlusScores);
     }
 
     public function handleTalentDetails($talentDetails): bool
