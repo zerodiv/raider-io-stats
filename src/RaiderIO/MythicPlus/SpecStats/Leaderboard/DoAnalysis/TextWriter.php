@@ -68,7 +68,7 @@ class TextWriter
         $calcCount = $ana->getMythicPlusStats()->getCalcCount();
         
         echo sprintf(
-            "  Total mythic runs for this spec captured runs=%d calcCount%d\n",
+            "  Total mythic runs for this spec captured runs=%d calcCount=%d\n",
             $runCount,
             $calcCount
         );

@@ -3,6 +3,9 @@
 namespace RaiderIO;
 
 use RaiderIO\CharacterClass\DeathKnight;
+use RaiderIO\CharacterClass\DemonHunter;
+use RaiderIO\CharacterClass\Druid;
+use RaiderIO\CharacterClass\Hunter;
 use \ReflectionClass;
 
 class CharacterClass
@@ -32,6 +35,9 @@ class CharacterClass
         }
        
         self::loadFunctionsFromClass(DeathKnight::class);
+        self::loadFunctionsFromClass(DemonHunter::class);
+        self::loadFunctionsFromClass(Druid::class);
+        self::loadFunctionsFromClass(Hunter::class);
 
         self::$_builtLookupTables = true;
     }
@@ -175,149 +181,8 @@ class CharacterClass
         return false;
     }
 
-    // --
-    // Spec functions, why are there two? Because on some php platforms array order isn't
-    // guarenteed for hashes.
-    // --
 
-    public static function get_death_knight_class_frost_spec_talents(): array
-    {
-        return array(
-            253593, 194878, 281208, // Inexorable Assault, Icy Talons, Cold Heart
-            207104, 207061, 57330,  // Runic Attenuation, Murderous Efficiency, Horn of Winter
-            276079, 108194, 207167, // Death's Reach, Asphyxiate, Blinding Sleet
-            207142, 194909, 207230, // Avalanche, Frozen Pulse, Frostscythe
-            207200, 212552, 48743,  // Permafrost, Wraith Walk, Death Pact
-            194912, 194913, 279302, // Gathering Storm, Glacial Advance, Frostwyrm's Fury
-            207126, 281238, 152279, // Icecap, Obliteration, Breath of Sindragosa
-        );
-    }
 
-    public static function get_death_knight_class_unholy_spec_talents(): array
-    {
-        return array(
-            207272, 194916, 207311, // Infected Claws, All Will Serve, Clawing Shadows
-            207264, 207269, 115989, // Bursting Sores, Ebon Fever, Unholy Blight
-            273952, 276079, 108194, // Grip of the Dead, Death's Reach, Asphyxiate
-            194917, 276023, 130736, // Pestilent Pustules, Harbinger of Doom, Soul Reaper
-            207321, 212552, 48743,  // Spell Eater, Wraith Walk, Death Pact
-            277234, 152280, 207317, // Pestilence, Defile, Epidemic
-            276837, 207289, 49206   // Army of the Damned, Unholy Frenzy, Summon Gargoyle
-        );
-    }
-
-    public static function get_demon_hunter_class_havoc_spec_talents(): array
-    {
-        return array(
-            203550, 206478, 232893, // Blind Fury, Demonic Appetite, Felblade
-            258876, 203555, 258920, // Insatiable Hunger, Demon Blades, Immolation Aura
-            258881, 192939, 258925, // Trail of Ruin, Fel Mastery, Fel Barrage
-            204909, 205411, 196555, // Soul Rending, Desperate Instincts, Netherwalk
-            258887, 206416, 258860, // Cycle of Hatred, First Blood, Dark Slash
-            206477, 203556, 211881, // Unleashed Power, Master of the Glaive, Fel Eruption
-            213410, 206476, 206491  // Demonic, Momentum, Nemesis
-        );
-    }
-
-    public static function get_demon_hunter_class_vengeance_spec_talents(): array
-    {
-        return array(
-            207550, 207548, 209400, // Abyssal Strike , Agonizing Flames, Razor Spikes
-            207697, 227174, 207739, // Feast of Souls, Fallout, Burning Alive
-            227322, 264002, 232893, // Flame Crash, Charred Flesh, Fellblade
-            217996, 218612, 263642, // Soul Rending, Feed the Demon, Fracture
-            207666, 209281, 202138, // Concentrated Sigils, Quickened Sigils, Sigil of Chains
-            264004, 247454, 212084, // Gluttony, Spirit Bomb, Fel Devastation
-            209258, 268175, 263648  // Last Resort, Void Reaver, Soul Barrier
-        );
-    }
-
-    public static function get_druid_class_balance_spec_talents(): array
-    {
-        return  array(
-            202430, 202425, 205636, // Nature's Balance, Warrior of Elune, Force of Nature
-            252216, 108238, 102401, // Tiger Dash, Renewal, Wild Charge
-            202157, 197491, 197492, // Feral Affinity, Guardian Affinity, Restoration Affinity
-            5211,   102359, 132469, // Mighty Bash, Mass Entanglement, Typhoon
-            114107, 202345, 102560, // Soul of the Forest, Starlord, Incarnation: Chosen of Elune
-            202354, 279620, 202347, // Stellar Drift, Twin Moons, Stellar Flare
-            202342, 202770, 274281  // Shooting Stars, Fury of Elune, New Moon
-        );
-    }
-
-    public static function get_druid_class_feral_spec_talents(): array
-    {
-        return array(
-            202021, 202031, 155580, // Predator, Sabertooth, Lunar Inspiration
-            252216, 108238, 102401, // Tiger Dash, Renewal, Wild Charge
-            197488, 217615, 197492, // Balance Affinity, Guardian Affinity, Restoration Affinity
-            5211,   102359, 132469, // Mighty Bash, Mass Entanglement, Typhoon
-            158476, 52610,  102543, // Soul of the Forest, Savage Roar, Incarnation: King of the Jungle
-            285564, 202028, 285381, // Scent of Blood, Brutal Slash, Primal Wrath
-            236068, 155672, 274837  // Moment of Clarity, Bloodtalons, Feral Frenzy
-        );
-    }
-
-    public static function get_druid_class_guardian_spec_talents(): array
-    {
-        return array(
-            203953, 203962, 155835, // Brambles, Blood Frenzy, Bristling Fur
-            252216, 102793, 102401, // Tiger Dash, Ursol's Vortex, Wild Charge
-            197488, 202155, 197492, // Balance Affinity, Feral Affinity, Restoration Affinity
-            5211,   102359, 132469, // Mighty Bash, Mass Entanglement, Typhoon
-            158477, 203964, 102558, // Soul of the Forest, Galactic Guardian, Incarnation: Guardian of Ursoc
-            203974, 203965, 155578, // Earthwarden, Survival of the Fittest, Guardian of Elune
-            204053, 204066, 80313   // Rend and Tear, Lunar Beam, Pulverize
-        );
-    }
-        
-    public static function get_druid_class_restoration_spec_talents(): array
-    {
-        return array(
-            207383, 200383, 102351, // Abundance, Prosperity, Cenarion Ward
-            252216, 108238, 102401, // Tiger Dash, Renewal, Wild Charge
-            197632, 197490, 197491, // Balance Affinity, Feral Affinity, Guardian Affinity
-            5211,   102359, 132469, // Mighty Bash, Mass Entanglement, Typhoon
-            158478, 200390, 33891,  // Soul of the Forest, Cultivation, Incarnation: Tree of Life
-            197073, 197061, 207385, // Inner Peace, Stonebark, Spring Blossoms
-            274902, 155675, 197721  // Photosynthesis, Germination, Flourish
-         );
-    }
-    
-    // public static function get_hunter_class_beast_mastery_spec_talents(): array
-    // {
-    //     return array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     );
-    // }
-
-    // 'hunter' => array(
-
-    //     'marksmanship' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'survival' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    // // ),
 
     public static function get_mage_class_arcane_spec_talents(): array
     {

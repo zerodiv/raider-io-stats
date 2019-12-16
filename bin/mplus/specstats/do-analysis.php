@@ -14,7 +14,7 @@ $html = new HtmlWriter();
 $text = new TextWriter();
 
 $doAmount = 0;
-$doAmount = 1;
+$doAmount = 9;
 
 $didAmount = 0;
 foreach (Seasons::getActiveSeasons() as $season) {
@@ -22,7 +22,7 @@ foreach (Seasons::getActiveSeasons() as $season) {
         foreach (CharacterClass::getActiveClassesAndSpecs() as $class => $specs) {
             foreach ($specs as $spec) {
                 // if we only want to process n number of analysis.
-                if ($doAmount !== 0 && $didAmount > $doAmount) {
+                if ($doAmount !== 0 && $didAmount >= $doAmount) {
                     continue;
                 }
                 $ana = new DoAnalysis($season, $region, $class, $spec);

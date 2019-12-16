@@ -19,24 +19,31 @@ class HtmlWriter
     public function createCharacterNav(): string
     {
         // create a navigation block for jumping around per char / spec
-        $characterNav = '<h1>Character and Talent Spec Stats</h1>';
+        $characterNav = '<h1>Character and Talent Spec Stats</h1>' . "\n";
 
-        $characterNav = '<table border="1" width="100%">';
+        $characterNav = '<table border="1" width="100%">' . "\n";
 
         foreach (CharacterClass::getActiveClassesAndSpecs() as $class => $specs) {
-            $characterNav .= '<td><h4>' . ucwords(str_replace('-', ' ', $class)) . '</h4></td>';
+            $characterNav .= '<td><h4>' . ucwords(str_replace('-', ' ', $class)) . '</h4></td>' . "\n";
         }
         $characterNav .= '</tr>';
 
         foreach (CharacterClass::getActiveClassesAndSpecs() as $class => $specs) {
             $characterNav .= '<td><ul>';
             foreach ($specs as $spec) {
-                $characterNav .= '<li><h5><a href="#' . $class . '_' . $spec . '">' . $spec . '</a></h5></li>';
+                $characterNav .= sprintf(
+                    '<li><b><a href="#%s_%s" onClick="switchClass(\'#%s_%s\'); return false;">%s</a></b></li>',
+                    str_replace('-', '_', $class),
+                    $spec,
+                    str_replace('-', '_', $class),
+                    $spec,
+                    $spec
+                );
             }
-            $characterNav .= '</ul></td>';
+            $characterNav .= '</ul></td>' . "\n";
         }
 
-        $characterNav .= '</table>';
+        $characterNav .= '</table>' . "\n";
         return $characterNav;
     }
 
@@ -68,11 +75,15 @@ class HtmlWriter
 
         $outputBuffer = '';
 
-        $outputBuffer .= '<div id=<"%s_%s">';
+        $outputBuffer .= sprintf(
+            '<div id="%s_%s">' . "\n",
+            str_replace('-', '_', $class),
+            $spec
+        );
         
         $outputBuffer .= sprintf(
             '<a name="%s_%s"><h3>%s: %s</h3></a>',
-            $class,
+            str_replace('-', '_', $class),
             $spec,
             ucwords(str_replace('-', ' ', $class)),
             $spec
@@ -139,7 +150,7 @@ class HtmlWriter
         $talentStats = $ana->getTalentStats()->getTalentStats($ana->getClass(), $ana->getSpec());
         $talents = CharacterClass::getTalentsForClassSpec($ana->getClass(), $ana->getSpec());
 
-        $outputBuffer .= '<h4>Talent choices for all characters Surveyed:</h4>';
+        $outputBuffer .= '<h4>Talent choices for all characters surveyed:</h4>';
 
         $outputBuffer .= '<center><table border="1" width="100%">';
 
@@ -152,13 +163,13 @@ class HtmlWriter
             $row[] = $spellId;
 
             if ($col == 3) {
-                var_dump($row);
+                //var_dump($row);
 
                 $rowMap = array();
                 foreach ($row as $spellId) {
                     $rowMap[$spellId] = $talentStats[$spellId];
                 }
-                var_dump($rowMap);
+                //var_dump($rowMap);
 
                 // now we have a talent row, sort it
                 arsort($rowMap, SORT_NUMERIC);
@@ -169,7 +180,7 @@ class HtmlWriter
                     $talentMarkup[$spellId] = $offset;
                 }
 
-                var_dump($talentMarkup);
+                //var_dump($talentMarkup);
                 
                 $col = 0;
                 $row = array();
@@ -209,7 +220,7 @@ class HtmlWriter
         
         $outputBuffer .= '</table></center>';
 
-        $outputBuffer .= '</div>';
+        $outputBuffer .= '</div>' . "\n";
 
         fwrite($fh, $outputBuffer);
 
@@ -235,7 +246,8 @@ class HtmlWriter
         
 <title>$titleString| zerodiv.github.io</title>
 <meta property="og:locale" content="en_US" />
-<link href="http://thomasf.github.io/solarized-css/solarized-dark.min.css" rel="stylesheet"></link>
+<link href="https://thomasf.github.io/solarized-css/solarized-dark.min.css" rel="stylesheet"></link>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script>var whTooltips = {colorLinks: true, iconizeLinks: true, renameLinks: true};</script>
 <script src="https://wow.zamimg.com/widgets/power.js"></script>
 <style>
@@ -255,6 +267,22 @@ td, th {
     color: #000000;
 }
 </style>
+<script>
+
+function switchClass(className) {
+    $("#death_knight_blood").hide();
+    $("#death_knight_frost").hide();
+    $("#death_knight_unholy").hide();
+    $("#demon_hunter_havoc").hide();
+    $("#demon_hunter_vengeance").hide();
+    $("#druid_balance").hide();
+    $("#druid_feral").hide();
+    $("#druid_guardian").hide();
+    $("#druid_restoration").hide();
+    $(className).show();
+}
+</script>
+
 </head>
 <body>
 
@@ -274,9 +302,11 @@ HEADER;
         <ul>
         <li><a href="https://raider.io/">Raider IO</a></li>
         <li><a href="http://www.github.com">Hosted on GitHub Pages</a></li>
+        <li><a href="https://thomasf.github.io/solarized-css/">Solarized Dark CSS</a></li>
         </ul>
         </div>
   
+<script>switchClass("#death_knight_blood");</script>
 </body>
 </html>
 FOOTER;
