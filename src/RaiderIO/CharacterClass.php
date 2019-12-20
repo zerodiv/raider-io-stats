@@ -6,6 +6,14 @@ use RaiderIO\CharacterClass\DeathKnight;
 use RaiderIO\CharacterClass\DemonHunter;
 use RaiderIO\CharacterClass\Druid;
 use RaiderIO\CharacterClass\Hunter;
+use RaiderIO\CharacterClass\Mage;
+use RaiderIO\CharacterClass\Monk;
+use RaiderIO\CharacterClass\Paladin;
+use RaiderIO\CharacterClass\Priest;
+use RaiderIO\CharacterClass\Rogue;
+use RaiderIO\CharacterClass\Shaman;
+use RaiderIO\CharacterClass\Warlock;
+use RaiderIO\CharacterClass\Warrior;
 use \ReflectionClass;
 
 class CharacterClass
@@ -38,7 +46,15 @@ class CharacterClass
         self::loadFunctionsFromClass(DemonHunter::class);
         self::loadFunctionsFromClass(Druid::class);
         self::loadFunctionsFromClass(Hunter::class);
-
+        self::loadFunctionsFromClass(Mage::class);
+        self::loadFunctionsFromClass(Monk::class);
+        self::loadFunctionsFromClass(Paladin::class);
+        self::loadFunctionsFromClass(Priest::class);
+        self::loadFunctionsFromClass(Rogue::class);
+        self::loadFunctionsFromClass(Shaman::class);
+        self::loadFunctionsFromClass(Warlock::class);
+        self::loadFunctionsFromClass(Warrior::class);
+        
         self::$_builtLookupTables = true;
     }
 
@@ -59,7 +75,7 @@ class CharacterClass
             if (preg_match('/^get_(.*)_class_(.*)_spec_talents$/', $method->getName(), $pregs)) {
                 $talentFunction = $pregs[0];
                 $class = str_replace('_', '-', $pregs[1]);
-                $spec  = $pregs[2];
+                $spec  = str_replace('_', '-', $pregs[2]);
 
                 // add the class if it's new to us.
                 self::$_dyn_classNamesMap[$class] = true;
@@ -75,6 +91,7 @@ class CharacterClass
                 $classSpecKey = $class . '|' . $spec;
                 
                 // create the talent map for this combo.
+                echo "loading=$talentFunction\n";
                 $talents = call_user_func($sourceClass . '::' . $talentFunction);
 
                 // store away the talents jic you need it later.
@@ -91,6 +108,7 @@ class CharacterClass
 
             if (preg_match('/^get_(.*)_spec_talent_names$/', $method->getName(), $pregs)) {
                 $talentNamesFunction = $pregs[0];
+                echo "loading=$talentNamesFunction\n";
                 $talentNames = call_user_func($sourceClass . '::' . $talentNamesFunction);
             
                 foreach ($talentNames as $spellId => $spellName) {
@@ -100,8 +118,9 @@ class CharacterClass
             
             if (preg_match('/^get_(.*)_class_(.*)_spec_mythicplus_spec$/', $method->getName(), $pregs)) {
                 $mplusSpecFunction = $pregs[0];
+                echo "loading=$mplusSpecFunction\n";
                 $class = str_replace('_', '-', $pregs[1]);
-                $spec = $pregs[2];
+                $spec = str_replace('_', '-', $pregs[2]);
 
                 $mplusSpec = call_user_func($sourceClass . '::' . $mplusSpecFunction);
 
@@ -180,250 +199,4 @@ class CharacterClass
 
         return false;
     }
-
-
-
-
-    public static function get_mage_class_arcane_spec_talents(): array
-    {
-        return array(
-            236628, 264354, 205022, // amplification, rule of three, arcane familiar
-            235463, 212653, 236457, // mana shield, shimmer, slipstream
-            1463,   55342,  116011, // incater's flow, mirror image, runer of power
-            205028, 205032, 157980, // resonance, charged up, supernova
-            235711, 205036, 113724, // chrono shift, ice ward, ring of frost
-            281482, 210725, 114923, // reverberate, touch of the magi, neter tempest
-            155147, 210805, 153626, // overpowered, time anomaly, arcane orb
-        );
-    }
-    
-    public static function get_mage_class_fire_spec_talents(): array
-    {
-        return array(
-            205026, 205020, 269644, // firestarter, pyromaniac, searing touch
-            235365, 212653, 157981, // blazing soul, shimmer, blast wave
-            1463,   55342,  116011, // incanter's flow, mirror image, rune of power
-            205029, 235870, 257541, // flame on, alexstraza's fury
-            236058, 205036, 113724, // frenetic speed, ice ward, ring of frost
-            205037, 205023, 44457,  // flame patch, conflagration, living bomb
-            155148, 269650, 153561, // kindling, pyroclasm, meteor
-        );
-    }
-
-    // public static function get_mage_class_frost_spec_talents(): array
-    // {
-    //     return array(
-    //         205027, 205024, 157997, // bone chilling, lonely winter, ice nova
-    //         235297, 212653, 108839, // glacial insulation, shimmer, ice floes
-    //         1463,   55342,  116011, // incanter's flow, mirror image, rune of power
-    //         205030, 278309, 257537, // frozen touch, chain reaction, ebonbolt
-    //         235224, 205036, 113724, // frigid winds, ice ward, ring of frost
-    //         270233, 56377,  153595, // freezing rain, splitting ice, comet storm
-    //         155149, 205021, 199786, // thermal void, ray of frost, glacial spike
-    //     );
-    // }
-
-    // 'monk' => array(
-    //     'brewmaster' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'windwalker' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'mistweaver' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    // ),
-    // 'paladin' => array(
-    //     'holy'          => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'protection'    => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'retribution'   => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    // ),
-    // 'priest' => array(
-    //     'discipline'    => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'holy'          => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'shadow'        => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    // ),
-    // 'rogue' => array(
-    //     'assassination' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'outlaw' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'subtlety' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    // ),
-    // 'shaman' => array(
-    //     'elemental' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'enhancement' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'restoration' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    // ),
-    // 'warlock' => array(
-    //     'affliction' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'demonology' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'destruction' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    // ),
-    // 'warrior' => array(
-    //     'arms' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'fury' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    //     'protection' => array(
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0, //
-    //         0, 0, 0 //
-    //     ),
-    // )
 }

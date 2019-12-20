@@ -14,7 +14,7 @@ $html = new HtmlWriter();
 $text = new TextWriter();
 
 $doAmount = 0;
-$doAmount = 9;
+//$doAmount = 1;
 
 $didAmount = 0;
 foreach (Seasons::getActiveSeasons() as $season) {

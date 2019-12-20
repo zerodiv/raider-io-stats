@@ -24,15 +24,16 @@ class HtmlWriter
         $characterNav = '<table border="1" width="100%">' . "\n";
 
         foreach (CharacterClass::getActiveClassesAndSpecs() as $class => $specs) {
-            $characterNav .= '<td><h4>' . ucwords(str_replace('-', ' ', $class)) . '</h4></td>' . "\n";
+            $characterNav .= '<th>' . ucwords(str_replace('-', ' ', $class)) . '</th>' . "\n";
         }
+
         $characterNav .= '</tr>';
 
         foreach (CharacterClass::getActiveClassesAndSpecs() as $class => $specs) {
-            $characterNav .= '<td><ul>';
+            $characterNav .= '<td>';
             foreach ($specs as $spec) {
                 $characterNav .= sprintf(
-                    '<li><b><a href="#%s_%s" onClick="switchClass(\'#%s_%s\'); return false;">%s</a></b></li>',
+                    '<b>&#8226;<a href="#%s_%s" onClick="switchClass(\'#%s_%s\'); return false;">%s</a></b><br/>',
                     str_replace('-', '_', $class),
                     $spec,
                     str_replace('-', '_', $class),
@@ -40,10 +41,91 @@ class HtmlWriter
                     $spec
                 );
             }
-            $characterNav .= '</ul></td>' . "\n";
+            $characterNav .= '</td>' . "\n";
         }
 
         $characterNav .= '</table>' . "\n";
+
+        $roleLeaders = new ByRoleLeaders();
+        $bucketData = $roleLeaders->getRoleBucketedData($this->_analysisStack);
+
+        $characterNav .= '<h3>By role and mythic+ range (top 3):</h3>';
+
+        $characterNav .= '<center><table>' . "\n";
+
+        $rangeRow = '<tr>';
+        $rangeRow .= '<th rowspan="2">&nbsp;</th>';
+
+        $classRanCountRow = '<tr>';
+
+        foreach ($roleLeaders->getRanges() as $range) {
+            $rangeRow .= '<th colspan="2">' . $range . '</th>';
+            $classRanCountRow .=
+                '<th>Class - Spec</th>'.
+                '<th>Run Count</th>'
+            ;
+        }
+        $rangeRow .= '</tr>';
+        $classRanCountRow .= '</tr>';
+
+        $characterNav .= $rangeRow;
+        $characterNav .= $classRanCountRow;
+
+        
+        foreach ($roleLeaders->getKeyRoles() as $role) {
+            $row1 = '<tr>';
+            $row1 .= '<th rowspan="3">' . $role . '</th>';
+
+            $row2 = '<tr>';
+
+            $row3 = '<tr>';
+
+            if (! array_key_exists($role, $bucketData)) {
+                continue;
+            }
+            
+            $roleData = $bucketData[$role];
+
+            foreach ($roleLeaders->getRanges() as $range) {
+                $rangeData = $roleData[$range];
+
+                // put the stack into a solid order.
+                arsort($rangeData, SORT_NUMERIC);
+
+                $shownCount = 0;
+        
+                foreach ($rangeData as $classString => $ranCount) {
+                    $pregs = array();
+                    if ($shownCount < 3 && preg_match('/(.*)_class_(.*)_spec/', $classString, $pregs)) {
+                        $shownCount++;
+                        $class = str_replace('_', '-', $pregs[1]);
+                        $spec = str_replace('_', '-', $pregs[2]);
+                        $rowName = 'row' . $shownCount;
+                        
+                        ${ $rowName } .= sprintf(
+                            '<td>%d) %s - %s</td>',
+                            $shownCount,
+                            $class,
+                            $spec
+                        );
+
+                        ${ $rowName } .=  sprintf(
+                            '<td>%d</td>',
+                            $ranCount
+                        );
+                    }
+                }
+
+                $characterNav .= '</td>';
+            }
+            $row1 .= '</tr>';
+            $row2 .= '</tr>';
+            $row3 .= '</tr>';
+
+            $characterNav .= $row1 . $row2 . $row3;
+        }
+        $characterNav .= '</table></center>' . "\n";
+
         return $characterNav;
     }
 
@@ -78,7 +160,7 @@ class HtmlWriter
         $outputBuffer .= sprintf(
             '<div id="%s_%s">' . "\n",
             str_replace('-', '_', $class),
-            $spec
+            str_replace('-', '_', $spec)
         );
         
         $outputBuffer .= sprintf(
@@ -89,14 +171,14 @@ class HtmlWriter
             $spec
         );
 
-        $outputBuffer .= '<center><table border="0" width="100%">';
+        $outputBuffer .= '<center><table border="0" width="100%" >';
         
         $outputBuffer .= '<tr>';
 
         $runCount =  $ana->getMythicPlusStats()->getRunCount();
         $runsByLevelBucketed = $ana->getMythicPlusStats()->getRunsByLevelBucketed();
         
-        $outputBuffer .= '<td style="border:0" width="50%">';
+        $outputBuffer .= '<td style="border:0; background-color: transparent;" width="50%">';
         $outputBuffer .= '<center><table>';
         
         $outputBuffer .= '<tr><th>M+ Level Range</th><th>Pct</th></tr>';
@@ -112,7 +194,7 @@ class HtmlWriter
         $outputBuffer .= '</table></center>';
         $outputBuffer .= '</td>';
 
-        $outputBuffer .= '<td style="border: 0" width="50%">';
+        $outputBuffer .= '<td style="border: 0; background-color: transparent;" width="50%">';
         $outputBuffer .= '<center><table>';
         $outputBuffer .= '<tr><th colspan="2">Dataset</th></tr>';
         
@@ -152,7 +234,19 @@ class HtmlWriter
 
         $outputBuffer .= '<h4>Talent choices for all characters surveyed:</h4>';
 
-        $outputBuffer .= '<center><table border="1" width="100%">';
+        $outputBuffer .= '<center>';
+        
+        $outputBuffer .= '<table>';
+        $outputBuffer .= '<tr><th colspan="3"><b>Legend:</th></tr>';
+        $outputBuffer .= '<tr>';
+        $outputBuffer .= '<td width="30%" class="goodTalent"><center>Good / Highly Used</center></td>';
+        $outputBuffer .= '<td width="30%" class="marginalTalent"><center>Marginal / Situational</center></td>';
+        $outputBuffer .= '<td width="30%" class="badTalent"><center>Bad</center></td>';
+        $outputBuffer .= '</table>';
+        
+        $outputBuffer .= '<br>';
+
+        $outputBuffer .= '<table width="100%">';
 
         $col = 0;
         $row = array();
@@ -201,8 +295,9 @@ class HtmlWriter
             }
 
             $row .= sprintf(
-                '<td class="%s"><b>%s</b></td><td class="%s">%-10d (%3d%%)</td>',
+                '<td class="%s"><a href="https://www.wowhead.com/spell=%d"><b>%s</b></a></td><td class="%s">%-10d (%3d%%)</td>',
                 $talentCss,
+                $spellId,
                 CharacterClass::resolveTalentToName($spellId),
                 $talentCss,
                 $talentStats[$spellId],
@@ -248,24 +343,44 @@ class HtmlWriter
 <meta property="og:locale" content="en_US" />
 <link href="https://thomasf.github.io/solarized-css/solarized-dark.min.css" rel="stylesheet"></link>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-<script>var whTooltips = {colorLinks: true, iconizeLinks: true, renameLinks: true};</script>
+<script>var whTooltips = {colorLinks: false, iconizeLinks: true, renameLinks: true};</script>
 <script src="https://wow.zamimg.com/widgets/power.js"></script>
 <style>
+body {
+    max-width: none;
+}
+
 td, th {
-    border: 1px solid white;   
+    border: 1px solid white;
+    background-color: #268bd2;
+    color: #000000;
+    padding: 6px;  
+}
+th {
+  background: #b58900;
+  color: #000000;
+  font-weight: bold;
 }
 .goodTalent {
-    background-color: #859900;
+    background-color: #268bd2;
     color: #000000;
+    font-weight: bold;
 }
 .marginalTalent {
-    background-color: #b58900;
+    background-color: #2aa198;
     color: #000000;
+    font-weight: bold;
 }
 .badTalent {
-    background-color: #d33682;
+    background-color: #6c71c4;
+    color: #000000;
+    font-weight: bold;
+}
+
+td a, a:visited {
     color: #000000;
 }
+
 </style>
 <script>
 
@@ -279,6 +394,33 @@ function switchClass(className) {
     $("#druid_feral").hide();
     $("#druid_guardian").hide();
     $("#druid_restoration").hide();
+    $("#hunter_beast_mastery").hide();
+    $("#hunter_marksmanship").hide();
+    $("#hunter_survival").hide();
+    $("#mage_arcane").hide();
+    $("#mage_fire").hide();
+    $("#mage_frost").hide();
+    $("#monk_brewmaster").hide();
+    $("#monk_mistweaver").hide();
+    $("#monk_windwalker").hide();
+    $("#paladin_holy").hide();
+    $("#paladin_protection").hide();
+    $("#paladin_retribution").hide();
+    $("#priest_discipline").hide();
+    $("#priest_holy").hide();
+    $("#priest_shadow").hide();
+    $("#rogue_assassination").hide();
+    $("#rogue_outlaw").hide();
+    $("#rogue_subtlety").hide();
+    $("#shaman_elemental").hide();
+    $("#shaman_enhancement").hide();
+    $("#shaman_restoration").hide();
+    $("#warlock_affliction").hide();
+    $("#warlock_demonology").hide();
+    $("#warlock_destruction").hide();
+    $("#warrior_arms").hide();
+    $("#warrior_fury").hide();
+    $("#warrior_protection").hide();
     $(className).show();
 }
 </script>
@@ -298,12 +440,19 @@ HEADER;
         return <<<'FOOTER'
         <div id="footer">
         <hr>  
-        <h5>Credits:</h5>  
-        <ul>
-        <li><a href="https://raider.io/">Raider IO</a></li>
-        <li><a href="http://www.github.com">Hosted on GitHub Pages</a></li>
-        <li><a href="https://thomasf.github.io/solarized-css/">Solarized Dark CSS</a></li>
-        </ul>
+        <center>
+        <table>
+        <tr>
+        <th colspan="4">Credits:</th>
+        </tr>
+        <tr>
+        <td><a href="https://raider.io/">Raider IO</a></td>
+        <td><a href="https://www.icy-veins.com/">Icy Veins</a></td>
+        <td><a href="http://www.github.com">Hosted on GitHub Pages</a></td>
+        <td><a href="https://thomasf.github.io/solarized-css/">Solarized Dark CSS</a></td>
+        </tr>
+        </table>
+        </center>
         </div>
   
 <script>switchClass("#death_knight_blood");</script>
