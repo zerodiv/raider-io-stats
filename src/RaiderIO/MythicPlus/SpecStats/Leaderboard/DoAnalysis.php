@@ -4,6 +4,7 @@ namespace RaiderIO\MythicPlus\SpecStats\Leaderboard;
 
 use RaiderIO\MythicPlus\SpecStats\Leaderboard\Base;
 use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\MythicPlusScores;
+use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\NeckTraitStats;
 use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\TalentStats;
 use RaiderIO\CharacterClass;
 
@@ -12,8 +13,10 @@ class DoAnalysis extends Base
     private int $_possible;
     private int $_characters;
     private int $_unavailable;
-    private TalentStats $_talentStats;
+    
     private MythicPlusScores $_mythicPlusScores;
+    private NeckTraitStats $_neckTraitStrats;
+    private TalentStats $_talentStats;
 
     public function __construct(string $season, string $region, string $class, string $spec)
     {
@@ -22,8 +25,10 @@ class DoAnalysis extends Base
         $this->_possible = 0;
         $this->_characters = 0;
         $this->_unavailable = 0;
-        $this->_talentStats = new TalentStats();
+
         $this->_mythicPlusScores = new MythicPlusScores();
+        $this->_neckTraitStrats = new NeckTraitStats();
+        $this->_talentStats = new TalentStats();
     }
 
     public function getPossibleCount(): int
@@ -49,6 +54,11 @@ class DoAnalysis extends Base
     public function getMythicPlusStats(): MythicPlusScores
     {
         return $this->_mythicPlusScores;
+    }
+
+    public function getNeckTraitStats(): NeckTraitStats
+    {
+        return $this->_neckTraitStrats;
     }
     
     public function crunchNumbers(): void
@@ -221,6 +231,22 @@ class DoAnalysis extends Base
         if (array_key_exists('mythicPlusScores', $details) !== true) {
             echo "  failed to find mythicPlusScores contentFile=$contentFile\n";
             return false;
+        }
+
+        if (array_key_exists('itemDetails', $details)) {
+            $itemDetails = $details['itemDetails'];
+
+            // extract the nested array
+            // items.neck.heart_of_azeroth.essences[]
+            if (array_key_exists('items', $itemDetails)) {
+                $items = $itemDetails['items'];
+
+                if (array_key_exists('neck', $items)) {
+                    $neck = $items['neck'];
+
+                    $this->_neckTraitStrats->handle($neck);
+                }
+            }
         }
 
         return $this->handleMythicPlusScores(

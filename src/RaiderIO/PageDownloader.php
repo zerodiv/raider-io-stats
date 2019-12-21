@@ -4,6 +4,7 @@ namespace RaiderIO;
 
 class PageDownloader
 {
+    private $_ch;
     private string $_url;
     private string $_needsDownload;
     private string $_contentFile;
@@ -15,6 +16,7 @@ class PageDownloader
 
     public function __construct(string $url, string $statusFile, string $contentFile)
     {
+        $this->_ch = null;
         $this->_url = $url;
         $this->_statusFile = $statusFile;
         $this->_contentFile = $contentFile;
@@ -64,21 +66,26 @@ class PageDownloader
             sleep($sleepAmt);
         }
 
-        $ch = curl_init();
+        if ($this->_ch === null) {
+            $this->_ch = curl_init();
+            
+            curl_setopt($this->_ch, CURLOPT_RETURNTRANSFER, true);
 
-        curl_setopt(
-            $ch,
-            CURLOPT_USERAGENT,
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3983.2 Safari/537.36'
-        );
-        curl_setopt($ch, CURLOPT_URL, $this->_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        //curl_setopt($ch, CURLOPT_VERBOSE , true);
-        $urlContents = curl_exec($ch);
+            curl_setopt(
+                $this->_ch,
+                CURLOPT_USERAGENT,
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3983.2 Safari/537.36'
+            );
+        }
+
+        
+        curl_setopt($this->_ch, CURLOPT_URL, $this->_url);
+        //curl_setopt($this->_ch, CURLOPT_VERBOSE , true);
+        $urlContents = curl_exec($this->_ch);
 
         // var_dump($urlContents);
 
-        curl_close($ch);
+        //curl_close($ch);
 
         $raw = json_decode($urlContents, true);
 

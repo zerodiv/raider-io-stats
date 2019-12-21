@@ -122,7 +122,7 @@ class ByRoleLeaders
             }
         }
 
-        var_dump($roleBucketedData);
+        //var_dump($roleBucketedData);
 
         return $roleBucketedData;
     }
