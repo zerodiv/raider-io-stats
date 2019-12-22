@@ -7,6 +7,7 @@ use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis;
 
 use RaiderIO\CharacterClass;
 use RaiderIO\Essences;
+use RaiderIO\MythicPlus\Ranges;
 
 class HtmlSpecAnalysis
 {
@@ -40,11 +41,7 @@ class HtmlSpecAnalysis
         $buffer .= '<td style="border:0; background-color: transparent;" width="33%">';
         $buffer .= self::mplusByRange($ana);
         $buffer .= '</td>';
-
-        $buffer .= '<td style="border: 0; background-color: transparent;" width="33%">';
-        $buffer .= self::essencesUsed($ana);
-        $buffer .= '</td>';
-
+        
         $buffer .= '<td style="border: 0; background-color: transparent;" width="33%">';
         $buffer .= self::dataset($ana);
         $buffer .= '</td>';
@@ -52,8 +49,10 @@ class HtmlSpecAnalysis
         $buffer .= '</tr>';
 
         $buffer .= '</table></center>';
-        
+                
         $buffer .= self::talentAnalysis($ana);
+
+        $buffer .= self::essencesUsed($ana);
 
         $buffer .= self::itemAnalysis($ana);
 
@@ -64,19 +63,19 @@ class HtmlSpecAnalysis
 
     public static function mplusByRange(DoAnalysis $ana): string
     {
-        $runCount =  $ana->getMythicPlusStats()->getRunCount();
-        $runsByLevelBucketed = $ana->getMythicPlusStats()->getRunsByLevelBucketed();
+        $characterCount  =  $ana->getMythicPlusStats()->getRunnerCount();
+        $byLevelBucketed = $ana->getMythicPlusStats()->getRunnersByLevelBucketed();
         
         $buffer = '';
         $buffer .= '<center><table>';
         $buffer .= '<tr><th>M+ Level Range</th><th>Pct</th></tr>';
 
-        foreach ($runsByLevelBucketed as $levelRange => $ranAmount) {
+        foreach ($byLevelBucketed as $levelRange => $characters) {
             $buffer .= sprintf(
                 "<tr><td>%s</td><td>%d (%d%%)</td></tr>",
                 $levelRange,
-                $ranAmount,
-                $ana->calculatePct($ranAmount, $runCount)
+                $characters,
+                $ana->calculatePct($characters, $characterCount)
             );
         }
         
@@ -120,6 +119,16 @@ class HtmlSpecAnalysis
 
     public static function essencesUsed(DoAnalysis $ana): string
     {
+        $class = $ana->getClass();
+        $spec = $ana->getSpec();
+
+        $buffer .= sprintf(
+            '<h3>%s %s - Essences used for characters surveyed:</h3>',
+            ucwords(str_replace('-', ' ', $spec)),
+            ucwords(str_replace('-', ' ', $class)),
+            $spec
+        );
+
         $primarySlot = $ana->getNeckTraitStats()->getPrimarySlot();
         $secondarySlot = $ana->getNeckTraitStats()->getSecondarySlot();
         
@@ -196,10 +205,8 @@ class HtmlSpecAnalysis
 
         $buffer = '';
 
-        $badSpecCount = $ana->getTalentStats()->getBadSpecCount();
-        $talentCount = $ana->getTalentStats()->getCharacterCount();
+        $allCount = $ana->getTalentStats()->getAllCharacterCount();
 
-        $talentStats = $ana->getTalentStats()->getTalentStats($ana->getClass(), $ana->getSpec());
         $talents = CharacterClass::getTalentsForClassSpec($ana->getClass(), $ana->getSpec());
 
         $buffer .= sprintf(
@@ -211,56 +218,146 @@ class HtmlSpecAnalysis
 
         $buffer .= '<center>';
         
-        $buffer .= '<table>';
+        $buffer .= '<script>';
 
-        $buffer .= '<tr>';
-        $buffer .= '<th>Level</th>';
-        $buffer .= '<th>Talent</th>';
-        $buffer .= '<th>Usage Pct</th>';
-        
-        $buffer .= '<th>Talent</th>';
-        $buffer .= '<th>Usage Pct</th>';
+        $switchFunctionName = sprintf(
+            '%s_%s_switchTalents',
+            str_replace('-', '_', $class),
+            str_replace('-', '_', $spec),
+        );
 
-        
-        $buffer .= '<th>Talent</th>';
-        $buffer .= '<th>Usage Pct</th>';
+        $buffer .= sprintf(
+            "function %s(range) {\n",
+            $switchFunctionName
+        );
 
-        $buffer .= '</tr>';
-
-        $col = 0;
-        $row = array();
-        $talentMarkup = array();
-        foreach ($talents as $spellId) {
-            $col++;
-
-            $row[] = $spellId;
-
-            if ($col == 3) {
-                //var_dump($row);
-
-                $rowMap = array();
-                foreach ($row as $spellId) {
-                    $rowMap[$spellId] = $talentStats[$spellId];
-                }
-                //var_dump($rowMap);
-
-                // now we have a talent row, sort it
-                arsort($rowMap, SORT_NUMERIC);
-                
-                $offset = 0;
-                foreach ($rowMap as $spellId => $count) {
-                    $offset++;
-                    $talentMarkup[$spellId] = $offset;
-                }
-
-                //var_dump($talentMarkup);
-                
-                $col = 0;
-                $row = array();
-            }
+        foreach (Ranges::getRanges() as $range) {
+            $inner_div_name = sprintf(
+                '%s_class_%s_spec_%s_talent_range',
+                str_replace('-', '_', $class),
+                str_replace('-', '_', $spec),
+                str_replace('-', '_', $range)
+            );
+            $buffer .= sprintf(
+                '$("#%s_nav").removeClass("goodTalent");' . "\n",
+                $inner_div_name
+            );
+            $buffer .= sprintf('$("#%s").hide();' . "\n", $inner_div_name);
         }
 
-        $talentLevels = array(
+        $buffer .= sprintf(
+            '$("#%s_class_%s_spec_" + range + "_talent_range_nav").addClass("goodTalent");' . "\n",
+            str_replace('-', '_', $class),
+            str_replace('-', '_', $spec),
+        );
+
+        $buffer .= sprintf(
+            '$("#%s_class_%s_spec_" + range + "_talent_range").show();' . "\n",
+            str_replace('-', '_', $class),
+            str_replace('-', '_', $spec),
+        );
+
+        $buffer .= "}\n";
+        $buffer .= '</script>';
+
+        $buffer .= '<table>';
+        $buffer .= '<tr>';
+        $buffer .= '<th>Mythic Range:</th>';
+
+        foreach (Ranges::getRanges() as $range) {
+            $inner_div_name = sprintf(
+                '%s_class_%s_spec_%s_talent_range',
+                str_replace('-', '_', $class),
+                str_replace('-', '_', $spec),
+                str_replace('-', '_', $range)
+            );
+
+            $talentCount = $ana->getTalentStats()->getCharacterCount($range);
+
+            // <a href="#%s_%s" onClick="switchClass(\'#%s_%s\');
+            $buffer .= sprintf(
+                '<th id="%s_nav"><a href="#%s_nav" onClick="%s(\'%s\')">%s - %d (%d%%)</a></th>',
+                $inner_div_name,
+                $inner_div_name,
+                $switchFunctionName,
+                str_replace('-', '_', $range),
+                $range,
+                $talentCount,
+                $ana->calculatePct($talentCount, $allCount)
+            );
+        }
+        $buffer .= '</tr>';
+        $buffer .= '</table>';
+        $buffer .= '<br/>';
+
+        foreach (Ranges::getRanges() as $range) {
+            $inner_div_name = sprintf(
+                '%s_class_%s_spec_%s_talent_range',
+                str_replace('-', '_', $class),
+                str_replace('-', '_', $spec),
+                str_replace('-', '_', $range)
+            );
+
+            $buffer .= sprintf(
+                '<div id="%s">',
+                $inner_div_name
+            );
+            
+            $badSpecCount = $ana->getTalentStats()->getBadSpecCount($range);
+            $talentCount = $ana->getTalentStats()->getCharacterCount($range);
+
+            $talentStats = $ana->getTalentStats()->getTalentStats($ana->getClass(), $ana->getSpec(), $range);
+       
+            $buffer .= '<table>';
+
+            $buffer .= '<tr>';
+            $buffer .= '<th>Level</th>';
+            $buffer .= '<th>Talent</th>';
+            $buffer .= '<th>Usage Pct</th>';
+        
+            $buffer .= '<th>Talent</th>';
+            $buffer .= '<th>Usage Pct</th>';
+
+        
+            $buffer .= '<th>Talent</th>';
+            $buffer .= '<th>Usage Pct</th>';
+
+            $buffer .= '</tr>';
+
+            $col = 0;
+            $row = array();
+            $talentMarkup = array();
+            foreach ($talents as $spellId) {
+                $col++;
+
+                $row[] = $spellId;
+
+                if ($col == 3) {
+                    //var_dump($row);
+
+                    $rowMap = array();
+                    foreach ($row as $spellId) {
+                        $rowMap[$spellId] = $talentStats[$spellId];
+                    }
+                    //var_dump($rowMap);
+
+                    // now we have a talent row, sort it
+                    arsort($rowMap, SORT_NUMERIC);
+                
+                    $offset = 0;
+                    foreach ($rowMap as $spellId => $count) {
+                        $offset++;
+                        $talentMarkup[$spellId] = $offset;
+                    }
+
+                    //var_dump($talentMarkup);
+                
+                    $col = 0;
+                    $row = array();
+                }
+            }
+
+            $talentLevels = array(
             0 => '15',
             1 => '30',
             2 => '45',
@@ -270,53 +367,56 @@ class HtmlSpecAnalysis
             6 => '100'
         );
 
-        $col = 0;
-        $row = '';
-        $talentLevel = 0;
-        foreach ($talents as $spellId) {
-            $col++;
+            $col = 0;
+            $row = '';
+            $talentLevel = 0;
+            foreach ($talents as $spellId) {
+                $col++;
 
-            // they all start out bad ;)
-            $talentCss = 'badTalent';
-            $talentScore = 3;
-            if ($talentMarkup[$spellId] == 2) {
-                $talentCss = 'marginalTalent';
-                $talentScore = 2;
-            } elseif ($talentMarkup[$spellId] == 1) {
-                $talentCss = 'goodTalent';
-                $talentScore = 1;
+                // they all start out bad ;)
+                $talentCss = 'badTalent';
+                $talentScore = 3;
+                if ($talentMarkup[$spellId] == 2) {
+                    $talentCss = 'marginalTalent';
+                    $talentScore = 2;
+                } elseif ($talentMarkup[$spellId] == 1) {
+                    $talentCss = 'goodTalent';
+                    $talentScore = 1;
+                }
+
+                $row .= sprintf(
+                    '<td class="%s">%d) <a href="https://www.wowhead.com/spell=%d"><b>%s</b></a></td><td class="%s">%-10d (%3d%%)</td>',
+                    $talentCss,
+                    $talentScore,
+                    $spellId,
+                    CharacterClass::resolveTalentToName($spellId),
+                    $talentCss,
+                    $talentStats[$spellId],
+                    $ana->calculatePct($talentStats[$spellId], $talentCount)
+                );
+
+                if ($col == 3 && array_key_exists($talentLevel, $talentLevels)) {
+                    $talentHeader = '<th>' . $talentLevels[$talentLevel] . '</th>';
+                    $buffer .= '<tr>' . $talentHeader . $row . "</tr>\n";
+                    $col = 0;
+                    $row = '';
+                    $talentLevel++;
+                }
             }
 
-            $row .= sprintf(
-                '<td class="%s">%d) <a href="https://www.wowhead.com/spell=%d"><b>%s</b></a></td><td class="%s">%-10d (%3d%%)</td>',
-                $talentCss,
-                $talentScore,
-                $spellId,
-                CharacterClass::resolveTalentToName($spellId),
-                $talentCss,
-                $talentStats[$spellId],
-                $ana->calculatePct($talentStats[$spellId], $talentCount)
-            );
-
-            if ($col == 3 && array_key_exists($talentLevel, $talentLevels)) {
-                $talentHeader = '<th>' . $talentLevels[$talentLevel] . '</th>';
-                $buffer .= '<tr>' . $talentHeader . $row . "</tr>\n";
-                $col = 0;
-                $row = '';
-                $talentLevel++;
-            }
-        }
-
-        $buffer .= '<tr><th colspan="7"><hr></th></tr>';
-        $buffer .= '<tr>';
-        $buffer .= '<th>Legend</th>';
-        $buffer .= '<td colspan="2" class="goodTalent"><center>Good / Highly Used</center></td>';
-        $buffer .= '<td colspan="2" class="marginalTalent"><center>Marginal / Situational</center></td>';
-        $buffer .= '<td colspan="2" class="badTalent"><center>Bad</center></td>';
-        $buffer .= '</tr>';
+            $buffer .= '<tr><th colspan="7"><hr></th></tr>';
+            $buffer .= '<tr>';
+            $buffer .= '<th>Legend</th>';
+            $buffer .= '<td colspan="2" class="goodTalent"><center>Good / Highly Used</center></td>';
+            $buffer .= '<td colspan="2" class="marginalTalent"><center>Marginal / Situational</center></td>';
+            $buffer .= '<td colspan="2" class="badTalent"><center>Bad</center></td>';
+            $buffer .= '</tr>';
         
-        $buffer .= '</table></center>';
-
+            $buffer .= '</table>';
+            $buffer .= '</div>';
+        }
+        $buffer .= '</center>';
+        $buffer .= '<script>' . $switchFunctionName . '("10_14");</script>';
         return $buffer;
     }
 

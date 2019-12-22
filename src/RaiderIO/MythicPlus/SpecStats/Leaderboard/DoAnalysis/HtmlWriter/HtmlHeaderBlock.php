@@ -61,6 +61,10 @@ th {
     font-weight: bold;
 }
 
+th a, a:visited {
+    color: #000000;
+}
+
 td a, a:visited {
     color: #000000;
 }

@@ -109,7 +109,7 @@ class ByRoleLeaders
 
             $classSpecString = $this->getClassSpecString($class, $spec);
 
-            $runsByLevelBucketed = $ana->getMythicPlusStats()->getRunsByLevelBucketed();
+            $runsByLevelBucketed = $ana->getMythicPlusStats()->getRunnersByLevelBucketed();
 
             foreach ($runsByLevelBucketed as $levelRange => $ranAmount) {
                 if (! array_key_exists($role, $roleBucketedData)) {

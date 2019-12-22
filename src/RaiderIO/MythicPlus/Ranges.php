@@ -23,19 +23,23 @@ class Ranges
     {
         return str_replace('-', '_', $range);
     }
-    
+
     public static function getRangeForLevel(int $mplusLevel): string
     {
         foreach (self::$_ranges as $range) {
             list($low, $high) = explode('-', $range);
+            
             $low = intval($low);
             $high = intval($high);
+
+            // var_dump($low);
+            // var_dump($high);
 
             if ($mplusLevel >= $low && $mplusLevel <= $high) {
                 return $range;
             }
-
-            return 'unknown-range';
         }
+
+        return 'unknown-range';
     }
 }

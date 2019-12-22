@@ -6,17 +6,13 @@ use RaiderIO\CharacterClass;
 
 class MythicPlusScores
 {
-    
-    // calculated data
-    private int $_runCount;
-    private array $_runByLevel;
+    private int $_runnerCount;
+    private array $_runnersByLevel;
 
     public function __construct()
     {
-        // calculated data
-        $this->_calcCount = 0;
-        $this->_runCount = 0;
-        $this->_runByLevel = array();
+        $this->_runnerCount = 0;
+        $this->_runnersByLevel = array();
     }
     
     public function getSpec0(): MythicPlusScoreSlice
@@ -39,24 +35,19 @@ class MythicPlusScores
         return $this->_spec3;
     }
 
-    public function getCalcCount(): int
+    public function getRunnerCount(): int
     {
-        return $this->_calcCount;
+        return $this->_runnerCount;
     }
 
-    public function getRunCount(): int
+    public function getRunnersByLevel(): array
     {
-        return $this->_runCount;
+        return $this->_runnersByLevel;
     }
 
-    public function getRunsByLevel(): array
+    public function getRunnersByLevelBucketed(): array
     {
-        return $this->_runByLevel;
-    }
-
-    public function getRunsByLevelBucketed(): array
-    {
-        $runsByLevel = $this->getRunsByLevel();
+        $runsByLevel = $this->getRunnersByLevel();
         
         $runsByLevelBucketed = array(
             '0-4' => 0,
@@ -88,9 +79,8 @@ class MythicPlusScores
         return $runsByLevelBucketed;
     }
 
-    public function processMythicPlusStack(string $class, string $spec, array $mplusStack): bool
+    public function processMythicPlusStack(string $class, string $spec, array $mplusStack): int
     {
-        $this->_calcCount++;
        
         // https://raider.io/api/characters/mythic-plus-runs?season=season-bfa-3&characterId=1285441
         // &role=all&mode=scored&affixes=all&date=all
@@ -125,22 +115,33 @@ class MythicPlusScores
 
         $runs = $specObj->getRuns();
 
-        $runCount = count($runs);
+        // $runCount = count($runs);
+        // if ($runCount > 100) {
+        //     $objHash = spl_object_hash($specObj);
+        //     echo "runCount - $runCount objHash=$objHash\n";
+        // }
+    
+        $highestRun = -1;
 
-        if ($runCount > 100) {
-            $objHash = spl_object_hash($specObj);
-            echo "runCount - $runCount objHash=$objHash\n";
-        }
-            
         foreach ($runs as $run) {
             $mythicLevel = $run->getMythicLevel();
-            if (! array_key_exists($mythicLevel, $this->_runByLevel)) {
-                $this->_runByLevel[$mythicLevel] = 0;
+            if ($mythicLevel > $highestRun) {
+                $highestRun = $mythicLevel;
             }
-            $this->_runByLevel[$mythicLevel]++;
-            $this->_runCount++;
+        }
+
+        // this character failed to run any instances wthin this season.
+        if ($highestRun == -1) {
+            return 0;
         }
         
-        return true;
+        if (! array_key_exists($highestRun, $this->_runnersByLevel)) {
+            $this->_runnersByLevel[$highestRun] = 0;
+        }
+
+        $this->_runnersByLevel[$highestRun]++;
+        $this->_runnerCount++;
+            
+        return $highestRun;
     }
 }

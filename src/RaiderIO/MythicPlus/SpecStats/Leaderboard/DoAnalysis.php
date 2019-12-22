@@ -8,12 +8,13 @@ use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\MythicPlusScores;
 use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\NeckTraitStats;
 use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\TalentStats;
 use RaiderIO\CharacterClass;
+use RaiderIO\MythicPlus\Ranges;
 
 class DoAnalysis extends Base
 {
     private int $_possible;
     private int $_characters;
-    private int $_unavailable;
+    private array $_unavailable;
     
     private ItemStats $_itemStats;
     private MythicPlusScores $_mythicPlusScores;
@@ -26,7 +27,8 @@ class DoAnalysis extends Base
 
         $this->_possible = 0;
         $this->_characters = 0;
-        $this->_unavailable = 0;
+        // reason => int
+        $this->_unavailable = array();
 
         $this->_itemStats = new ItemStats();
         $this->_mythicPlusScores = new MythicPlusScores();
@@ -44,9 +46,27 @@ class DoAnalysis extends Base
         return $this->_characters;
     }
 
-    public function getUnavailableCount(): int
+    public function getUnavailable(): array
     {
         return $this->_unavailable;
+    }
+    
+    public function getUnavailableCount(): int
+    {
+        $count = 0;
+        foreach ($this->_unavailable as $reason => $cnt) {
+            $count += $cnt;
+        }
+        return $count;
+    }
+
+    public function addUnavailable(string $reason): bool
+    {
+        if (! array_key_exists($reason, $this->_unavailable)) {
+            $this->_unavailable[$reason] = 0;
+        }
+        $this->_unavailable[$reason]++;
+        return true;
     }
 
     public function getItemStats(): ItemStats
@@ -148,7 +168,7 @@ class DoAnalysis extends Base
             if ($this->parseCharacter($id, $persona_id) === true) {
                 $this->_characters++;
             } else {
-                $this->_unavailable++;
+                $this->addUnavailable('parseCharacterFailed');
             }
         }
     }
@@ -161,6 +181,7 @@ class DoAnalysis extends Base
 
         if (! is_file($contentFile)) {
             // echo "  contentFile=$contentFile - unavailable\n";
+            $this->addUnavailable('fileNotAvailable');
             return false;
         }
 
@@ -171,6 +192,7 @@ class DoAnalysis extends Base
 
         if (! is_array($js)) {
             echo "  failed to parse contentFile=$contentFile\n";
+            $this->addUnavailable('invalidJson');
             return false;
         }
 
@@ -186,12 +208,14 @@ class DoAnalysis extends Base
                     unlink($contentFile);
                 }
                 echo "  invalid character download\n";
+                $this->addUnavailable('badHttpDownload');
                 return false;
             }
         }
 
         if (array_key_exists('characterDetails', $js) !== true) {
             echo "  failed to find characterDetails contentFile=$contentFile\n";
+            $this->addUnavailable('noCharacterDetails');
             return false;
         }
 
@@ -202,6 +226,7 @@ class DoAnalysis extends Base
     {
         if (array_key_exists('character', $details) !== true) {
             echo "  failed to find character contentFile=$contentFile\n";
+            $this->addUnavailable('noCharacter');
             return false;
         }
 
@@ -215,6 +240,7 @@ class DoAnalysis extends Base
             if ($className != $this->getClass()) {
                 // wrong class.
                 //var_dump($className);
+                $this->addUnavailable('wrongClass_' . $this->getClass() . '_had_' . $className);
                 return false;
             }
         }
@@ -227,21 +253,41 @@ class DoAnalysis extends Base
             if ($specName != $this->getSpec()) {
                 // wrong spec
                 //var_dump($specName);
+                $this->addUnavailable('wrongSpec_' . $this->getSpec() . '_had_' . $specName);
                 return false;
             }
         }
 
         if (array_key_exists('talentsDetails', $character) !== true) {
             echo "  failed to find talentsDetails contentFile=$contentFile\n";
-            return false;
-        }
-
-        if ($this->handleTalentDetails($character['talentsDetails']) !== true) {
+            $this->addUnavailable('noTalentDetails');
             return false;
         }
 
         if (array_key_exists('mythicPlusScores', $details) !== true) {
             echo "  failed to find mythicPlusScores contentFile=$contentFile\n";
+            $this->addUnavailable('noMythicPlusSores');
+            return false;
+        }
+
+        $highestRun = $this->handleMythicPlusScores(
+            $this->getClass(),
+            $this->getSpec(),
+            $details['mythicPlusScores']
+        );
+        
+        if ($highestRun === 0) {
+            //echo "  highestMplusWasZero contentFile=$contentFile\n";
+            $this->addUnavailable('highestMplusWasZero');
+            return false;
+        }
+        
+        $range = Ranges::getRangeForLevel($highestRun);
+
+        // var_dump($range);
+
+        if ($this->handleTalentDetails($range, $character['talentsDetails']) !== true) {
+            $this->addUnavailable('handleTalentDetailsFailed');
             return false;
         }
 
@@ -265,20 +311,21 @@ class DoAnalysis extends Base
             }
         }
 
-        return $this->handleMythicPlusScores(
-            $this->getClass(),
-            $this->getSpec(),
-            $details['mythicPlusScores']
-        );
+        return true;
     }
 
-    public function handleMythicPlusScores(string $class, string $spec, array $mythicPlusScores): bool
+    public function handleMythicPlusScores(string $class, string $spec, array $mythicPlusScores): int
     {
         return $this->_mythicPlusScores->processMythicPlusStack($class, $spec, $mythicPlusScores);
     }
 
-    public function handleTalentDetails($talentDetails): bool
+    public function handleTalentDetails(string $range, array $talentDetails): bool
     {
-        return $this->_talentStats->processTalentStack($this->getClass(), $this->getSpec(), $talentDetails);
+        return $this->_talentStats->processTalentStack(
+            $this->getClass(),
+            $this->getSpec(),
+            $range,
+            $talentDetails
+        );
     }
 }
