@@ -10,7 +10,7 @@ class ItemStats
     const TRIM_TO_TOP = 5;
     
     private array $_items;
-    private int $_count;
+    private array $_count;
     
     // raider.io has bad data on it, sometimes non-duel wield classes get offhands.
     private $_dualWield = array(
@@ -54,21 +54,28 @@ class ItemStats
 
     public function __construct()
     {
-        // slot => itemIds => count
+        // range => slot => itemIds => count
         $this->_items = array();
-        $this->_count = 0;
+        // range => count
+        $this->_count = array();
         
         // <a href="#" data-wowhead="item=2828">hai</a>
     }
 
-    public function getItems(): array
+    public function getItems(string $range): array
     {
-        return $this->_items;
+        if (array_key_exists($range, $this->_items)) {
+            return $this->_items[$range];
+        }
+        return array();
     }
 
-    public function getCount(): int
+    public function getCount(string $range): int
     {
-        return $this->_count;
+        if (array_key_exists($range, $this->_count)) {
+            return $this->_count[$range];
+        }
+        return 0;
     }
     
     public function dataQuality(string $contentFile, string $class, string $spec, array $items): bool
@@ -116,9 +123,15 @@ class ItemStats
         
         return true;
     }
-    public function handle(string $contentFile, string $class, string $spec, array $items)
+
+    public function handle(string $contentFile, string $class, string $spec, string $range, array $items)
     {
-        $this->_count++;
+        if (!array_key_exists($range, $this->_count)) {
+            $this->_count[$range] = 0;
+            $this->_items[$range] = array();
+        }
+
+        $this->_count[$range]++;
 
         if ($this->dataQuality($contentFile, $class, $spec, $items) !== true) {
             return false;
@@ -131,8 +144,11 @@ class ItemStats
             if ($slot == 'trinket1' || $slot == 'trinket2') {
                 $slot = 'trinket';
             }
-            if (! array_key_exists($slot, $this->_items)) {
-                $this->_items[$slot] = array();
+            if (! array_key_exists($range, $this->_items)) {
+                $this->_items[$range] = array();
+            }
+            if (! array_key_exists($slot, $this->_items[$range])) {
+                $this->_items[$range][$slot] = array();
             }
             
             if (! array_key_exists('item_id', $item)) {
@@ -141,11 +157,11 @@ class ItemStats
             
             $itemId = intval($item['item_id']);
 
-            if (!array_key_exists($itemId, $this->_items[$slot])) {
-                $this->_items[$slot][$itemId] = 0;
+            if (!array_key_exists($itemId, $this->_items[$range][$slot])) {
+                $this->_items[$range][$slot][$itemId] = 0;
             }
                         
-            $this->_items[$slot][$itemId]++;
+            $this->_items[$range][$slot][$itemId]++;
         }
 
         //var_dump($this->_items);
@@ -154,23 +170,23 @@ class ItemStats
 
     public function trimToTop(): bool
     {
-        foreach ($this->_items as $slot => $itemStats) {
+        foreach ($this->_items as $range => $slotData) {
+            foreach ($slotData as $slot => $itemStats) {
+                $trimmedList = array();
+            
+                // stack sort the itemStats
+                arsort($itemStats, SORT_NUMERIC);
 
-            // stack sort the itemStats
-            arsort($itemStats, SORT_NUMERIC);
-
-            $trimmedList = array();
-
-            $t = 0;
-            foreach ($itemStats as $itemId => $useCount) {
-                if ($t > self::TRIM_TO_TOP) {
-                    continue;
+                $t = 0;
+                foreach ($itemStats as $itemId => $useCount) {
+                    if ($t > self::TRIM_TO_TOP) {
+                        continue;
+                    }
+                    $trimmedList[$itemId] = $useCount;
+                    $t++;
                 }
-                $trimmedList[$itemId] = $useCount;
-                $t++;
+                $this->_items[$range][$slot] = $trimmedList;
             }
-
-            $this->_items[$slot] = $trimmedList;
         }
 
         return true;

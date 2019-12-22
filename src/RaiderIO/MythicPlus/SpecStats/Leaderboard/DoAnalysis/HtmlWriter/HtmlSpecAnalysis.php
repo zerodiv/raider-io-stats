@@ -319,8 +319,44 @@ class HtmlSpecAnalysis
         $class = $ana->getClass();
         $spec = $ana->getSpec();
         
-        $count = $ana->getItemStats()->getCount();
-        $items = $ana->getItemStats()->getItems();
+
+        $buffer = '';
+
+        $buffer .= sprintf(
+            '<h3>%s %s - Item analysis:</h3>',
+            ucwords(str_replace('-', ' ', $spec)),
+            ucwords(str_replace('-', ' ', $class)),
+            $spec
+        );
+
+        $ranger = new HtmlByRange($ana, 'item_analysis');
+
+        $buffer .= '<center>';
+        $buffer .= $ranger->getNavigationTable();
+
+        foreach (Ranges::getRanges() as $range) {
+            $inner_div_name = $ranger->getInnerDivName($range);
+
+            $buffer .= sprintf(
+                '<div id="%s">',
+                $inner_div_name
+            );
+
+            $buffer .= self::getItemAnalysisForRange($ana, $range);
+
+            $buffer .= '</div>';
+        }
+        
+        $buffer .= $ranger->addDefaultSwitch();
+        $buffer .= '</center>';
+
+        return $buffer;
+    }
+
+    public static function getItemAnalysisForRange(DoAnalysis $ana, string $range): string
+    {
+        $count = $ana->getItemStats()->getCount($range);
+        $items = $ana->getItemStats()->getItems($range);
 
         $content = '';
 
@@ -425,20 +461,6 @@ class HtmlSpecAnalysis
                 $row5,
             );
         }
-
-        $buffer = '';
-
-        $buffer .= sprintf(
-            '<h3>%s %s - Item analysis:</h3>',
-            ucwords(str_replace('-', ' ', $spec)),
-            ucwords(str_replace('-', ' ', $class)),
-            $spec
-        );
-
-        $buffer .= '<center>';
-        $buffer .= $content;
-        $buffer .= '</center>';
-
-        return $buffer;
+        return $content;
     }
 }

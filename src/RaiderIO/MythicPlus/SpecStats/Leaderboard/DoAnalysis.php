@@ -301,7 +301,7 @@ class DoAnalysis extends Base
 
                 // allow the item handler to process all of the items.
 
-                $this->_itemStats->handle($contentFile, $this->getClass(), $this->getSpec(), $items);
+                $this->_itemStats->handle($contentFile, $this->getClass(), $this->getSpec(), $range, $items);
 
                 if (array_key_exists('neck', $items)) {
                     $neck = $items['neck'];
