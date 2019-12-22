@@ -306,7 +306,7 @@ class DoAnalysis extends Base
                 if (array_key_exists('neck', $items)) {
                     $neck = $items['neck'];
 
-                    $this->_neckTraitStrats->handle($neck);
+                    $this->_neckTraitStrats->handle($range, $neck);
                 }
             }
         }

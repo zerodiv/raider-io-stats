@@ -24,38 +24,13 @@ class HtmlSpecAnalysis
             str_replace('-', '_', $class),
             str_replace('-', '_', $spec)
         );
-        
-        // put a title within the div
-        $buffer .= sprintf(
-            '<a name="%s_%s"><h3>%s %s - overall stats</h3></a>',
-            str_replace('-', '_', $class),
-            $spec,
-            ucwords(str_replace('-', ' ', $spec)),
-            ucwords(str_replace('-', ' ', $class)),
-        );
-        
-        $buffer .= '<center><table border="0" width="100%" >';
-        
-        $buffer .= '<tr>';
-        
-        $buffer .= '<td style="border:0; background-color: transparent;" width="33%">';
-        $buffer .= self::mplusByRange($ana);
-        $buffer .= '</td>';
-        
-        $buffer .= '<td style="border: 0; background-color: transparent;" width="33%">';
-        $buffer .= self::dataset($ana);
-        $buffer .= '</td>';
-        
-        $buffer .= '</tr>';
-
-        $buffer .= '</table></center>';
-                
+               
         $buffer .= self::talentAnalysis($ana);
 
         $buffer .= self::essencesUsed($ana);
 
         $buffer .= self::itemAnalysis($ana);
-
+        
         $buffer .= '</div>' . "\n";
 
         return $buffer;
@@ -122,6 +97,8 @@ class HtmlSpecAnalysis
         $class = $ana->getClass();
         $spec = $ana->getSpec();
 
+        $buffer = '';
+        
         $buffer .= sprintf(
             '<h3>%s %s - Essences used for characters surveyed:</h3>',
             ucwords(str_replace('-', ' ', $spec)),
@@ -129,72 +106,60 @@ class HtmlSpecAnalysis
             $spec
         );
 
-        $primarySlot = $ana->getNeckTraitStats()->getPrimarySlot();
-        $secondarySlot = $ana->getNeckTraitStats()->getSecondarySlot();
-        
-        $primaryCount = $ana->getNeckTraitStats()->getPrimarySlotCount();
-        $secondaryCount = $ana->getNeckTraitStats()->getSecondarySlotCount();
-        
-        arsort($primarySlot, SORT_NUMERIC);
-        arsort($secondarySlot, SORT_NUMERIC);
-        
-        $row1 = '<tr>';
-        $row2 = '<tr>';
-        $row3 = '<tr>';
+        $ranger = new HtmlByRange($ana, 'neck_essences');
 
-        list($row1, $row2, $row3) = self::essenceUsed($ana, $primaryCount, $primarySlot, $row1, $row2, $row3);
-        list($row1, $row2, $row3) = self::essenceUsed($ana, $secondaryCount, $secondarySlot, $row1, $row2, $row3);
-        
-        $row1 .= '</tr>';
-        $row2 .= '</tr>';
-        $row3 .= '</tr>';
+        $buffer .= '<center>';
+        $buffer .= $ranger->getNavigationTable();
 
-        $buffer = '';
-        $buffer .= '<center><table>';
-        $buffer .= '<tr><th colspan="4">Neck Essences</th></tr>';
-        $buffer .= '<tr>';
-        $buffer .= '<th colspan="2">Primary</th>';
-        $buffer .= '<th colspan="2">Secondary</th>';
-        $buffer .= '</tr>';
-        $buffer .= '<tr>';
-        $buffer .= '<th>Name:</th>';
-        $buffer .= '<th>Pct:</th>';
-        $buffer .= '<th>Name:</th>';
-        $buffer .= '<th>Pct:</th>';
-        $buffer .= '</tr>';
-        $buffer .= $row1 . $row2 . $row3;
-        $buffer .= '</table></center>';
-        
-        return $buffer;
-    }
+        foreach (Ranges::getRanges() as $range) {
+            $primarySlot = $ana->getNeckTraitStats()->getPrimarySlot($range);
+            $secondarySlot = $ana->getNeckTraitStats()->getSecondarySlot($range);
+            
+            $primaryCount = $ana->getNeckTraitStats()->getPrimarySlotCount($range);
+            $secondaryCount = $ana->getNeckTraitStats()->getSecondarySlotCount($range);
+            
+            arsort($primarySlot, SORT_NUMERIC);
+            arsort($secondarySlot, SORT_NUMERIC);
+            
+            $row1 = '<tr>';
+            $row2 = '<tr>';
+            $row3 = '<tr>';
+    
+            list($row1, $row2, $row3) = self::essenceUsed($ana, $primaryCount, $primarySlot, $row1, $row2, $row3);
+            list($row1, $row2, $row3) = self::essenceUsed($ana, $secondaryCount, $secondarySlot, $row1, $row2, $row3);
+            
+            $row1 .= '</tr>';
+            $row2 .= '</tr>';
+            $row3 .= '</tr>';
+    
+            $inner_div_name = $ranger->getInnerDivName($range);
 
-    public static function dataset(DoAnalysis $ana): string
-    {
-        $buffer = '';
-        $buffer .= '<center><table>';
-        $buffer .= '<tr><th colspan="2">Dataset used</th></tr>';
-        
-        $buffer .= sprintf(
-            '<tr><td>%s</td><td>%d (%d%%)</td></tr>',
-            'Characters',
-            $ana->getCharacterCount(),
-            $ana->calculatePct($ana->getCharacterCount(), $ana->getPossibleCount()),
-        );
+            $buffer .= sprintf(
+                '<div id="%s">',
+                $inner_div_name
+            );
 
-        $buffer .= sprintf(
-            '<tr><td>%s</td><td>%d (%d%%)</td></tr>',
-            'Unavailable (due to spec switch)',
-            $ana->getUnavailableCount(),
-            $ana->calculatePct($ana->getUnavailableCount(), $ana->getPossibleCount()),
-        );
+            $buffer .= '<table>';
+            $buffer .= '<tr><th colspan="4">Neck Essences</th></tr>';
+            $buffer .= '<tr>';
+            $buffer .= '<th colspan="2">Primary</th>';
+            $buffer .= '<th colspan="2">Secondary</th>';
+            $buffer .= '</tr>';
+            $buffer .= '<tr>';
+            $buffer .= '<th>Name:</th>';
+            $buffer .= '<th>Pct:</th>';
+            $buffer .= '<th>Name:</th>';
+            $buffer .= '<th>Pct:</th>';
+            $buffer .= '</tr>';
+            $buffer .= $row1 . $row2 . $row3;
+            $buffer .= '</table>';
+            $buffer .= '</div>';
+        }
 
-        $buffer .= sprintf(
-            '<tr><td>%s</td><td>%d</td></tr>',
-            'Leaderboard',
-            $ana->getPossibleCount()
-        );
+        $buffer .= $ranger->addDefaultSwitch();
+        $buffer .= '<hr>';
+        $buffer .= '</center>';
         
-        $buffer .= '</table></center>';
         return $buffer;
     }
 
@@ -204,7 +169,7 @@ class HtmlSpecAnalysis
         $spec = $ana->getSpec();
 
         $buffer = '';
-
+        $buffer .= "<!-- start spec analysis section -->\n";
         $allCount = $ana->getTalentStats()->getAllCharacterCount();
 
         $talents = CharacterClass::getTalentsForClassSpec($ana->getClass(), $ana->getSpec());
@@ -218,85 +183,12 @@ class HtmlSpecAnalysis
 
         $buffer .= '<center>';
         
-        $buffer .= '<script>';
+        $ranger = new HtmlByRange($ana, 'talent_range');
 
-        $switchFunctionName = sprintf(
-            '%s_%s_switchTalents',
-            str_replace('-', '_', $class),
-            str_replace('-', '_', $spec),
-        );
-
-        $buffer .= sprintf(
-            "function %s(range) {\n",
-            $switchFunctionName
-        );
+        $buffer .= $ranger->getNavigationTable();
 
         foreach (Ranges::getRanges() as $range) {
-            $inner_div_name = sprintf(
-                '%s_class_%s_spec_%s_talent_range',
-                str_replace('-', '_', $class),
-                str_replace('-', '_', $spec),
-                str_replace('-', '_', $range)
-            );
-            $buffer .= sprintf(
-                '$("#%s_nav").removeClass("goodTalent");' . "\n",
-                $inner_div_name
-            );
-            $buffer .= sprintf('$("#%s").hide();' . "\n", $inner_div_name);
-        }
-
-        $buffer .= sprintf(
-            '$("#%s_class_%s_spec_" + range + "_talent_range_nav").addClass("goodTalent");' . "\n",
-            str_replace('-', '_', $class),
-            str_replace('-', '_', $spec),
-        );
-
-        $buffer .= sprintf(
-            '$("#%s_class_%s_spec_" + range + "_talent_range").show();' . "\n",
-            str_replace('-', '_', $class),
-            str_replace('-', '_', $spec),
-        );
-
-        $buffer .= "}\n";
-        $buffer .= '</script>';
-
-        $buffer .= '<table>';
-        $buffer .= '<tr>';
-        $buffer .= '<th>Mythic Range:</th>';
-
-        foreach (Ranges::getRanges() as $range) {
-            $inner_div_name = sprintf(
-                '%s_class_%s_spec_%s_talent_range',
-                str_replace('-', '_', $class),
-                str_replace('-', '_', $spec),
-                str_replace('-', '_', $range)
-            );
-
-            $talentCount = $ana->getTalentStats()->getCharacterCount($range);
-
-            // <a href="#%s_%s" onClick="switchClass(\'#%s_%s\');
-            $buffer .= sprintf(
-                '<th id="%s_nav"><a href="#%s_nav" onClick="%s(\'%s\')">%s - %d (%d%%)</a></th>',
-                $inner_div_name,
-                $inner_div_name,
-                $switchFunctionName,
-                str_replace('-', '_', $range),
-                $range,
-                $talentCount,
-                $ana->calculatePct($talentCount, $allCount)
-            );
-        }
-        $buffer .= '</tr>';
-        $buffer .= '</table>';
-        $buffer .= '<br/>';
-
-        foreach (Ranges::getRanges() as $range) {
-            $inner_div_name = sprintf(
-                '%s_class_%s_spec_%s_talent_range',
-                str_replace('-', '_', $class),
-                str_replace('-', '_', $spec),
-                str_replace('-', '_', $range)
-            );
+            $inner_div_name = $ranger->getInnerDivName($range);
 
             $buffer .= sprintf(
                 '<div id="%s">',
@@ -415,8 +307,10 @@ class HtmlSpecAnalysis
             $buffer .= '</table>';
             $buffer .= '</div>';
         }
+        $buffer .= '<hr>';
         $buffer .= '</center>';
-        $buffer .= '<script>' . $switchFunctionName . '("10_14");</script>';
+        $buffer .= $ranger->addDefaultSwitch();
+        $buffer .= "<!-- end spec analysis section -->\n";
         return $buffer;
     }
 
@@ -424,7 +318,6 @@ class HtmlSpecAnalysis
     {
         $class = $ana->getClass();
         $spec = $ana->getSpec();
-
         
         $count = $ana->getItemStats()->getCount();
         $items = $ana->getItemStats()->getItems();

@@ -9,16 +9,20 @@ class NeckTraitStats
 {
     private array $_slot_primary;
     private array $_slot_secondary;
-    private int $_slot_primary_count;
-    private int $_slot_secondary_count;
+    private array $_slot_primary_count;
+    private array $_slot_secondary_count;
     
 
     public function __construct()
     {
+        // range => id => cnt
         $this->_slot_primary = array();
+        // range => id => cnt
         $this->_slot_secondary = array();
-        $this->_slot_primary_count = 0;
-        $this->_slot_secondary_count = 0;
+        // range => cnt
+        $this->_slot_primary_count = array();
+        // range => cnt
+        $this->_slot_secondary_count = array();
         
 
         // itemDetails.items.neck.heart_of_azeroth.essences[]
@@ -41,27 +45,39 @@ class NeckTraitStats
         // }
     }
 
-    public function getPrimarySlot(): array
+    public function getPrimarySlot(string $range): array
     {
-        return $this->_slot_primary;
+        if (array_key_exists($range, $this->_slot_primary)) {
+            return $this->_slot_primary[$range];
+        }
+        return array();
     }
 
-    public function getPrimarySlotCount(): int
+    public function getPrimarySlotCount(string $range): int
     {
-        return $this->_slot_primary_count;
+        if (array_key_exists($range, $this->_slot_primary_count)) {
+            return $this->_slot_primary_count[$range];
+        }
+        return 0;
     }
 
-    public function getSecondarySlot(): array
+    public function getSecondarySlot(string $range): array
     {
-        return $this->_slot_secondary;
+        if (array_key_exists($range, $this->_slot_secondary)) {
+            return $this->_slot_secondary[$range];
+        }
+        return array();
     }
 
-    public function getSecondarySlotCount(): int
+    public function getSecondarySlotCount(string $range): int
     {
-        return $this->_slot_secondary_count;
+        if (array_key_exists($range, $this->_slot_secondary_count)) {
+            return $this->_slot_secondary_count[$range];
+        }
+        return 0;
     }
 
-    public function handle(array $neck)
+    public function handle(string $range, array $neck)
     {
         if (!array_key_exists('heart_of_azeroth', $neck)) {
             return false;
@@ -101,12 +117,17 @@ class NeckTraitStats
             
             $id = $essence->getId();
 
-            if (! array_key_exists($id, $this->{ $slotVariable })) {
-                $this->{$slotVariable}[$id] = 0;
+            if (! array_key_exists($range, $this->{$slotVariable})) {
+                $this->{$slotVariable}[$range] = array();
+                $this->{$slotCountVariable}[$range] = 0;
             }
 
-            $this->{$slotVariable}[$id]++;
-            $this->{$slotCountVariable}++;
+            if (! array_key_exists($id, $this->{ $slotVariable }[$range])) {
+                $this->{$slotVariable}[$range][$id] = 0;
+            }
+
+            $this->{$slotVariable}[$range][$id]++;
+            $this->{$slotCountVariable}[$range]++;
         }
 
         // var_dump($this->_slot_primary);
