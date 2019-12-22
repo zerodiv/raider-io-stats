@@ -55,6 +55,8 @@ class HtmlSpecAnalysis
         
         $buffer .= self::talentAnalysis($ana);
 
+        $buffer .= self::itemAnalysis($ana);
+
         $buffer .= '</div>' . "\n";
 
         return $buffer;
@@ -140,9 +142,10 @@ class HtmlSpecAnalysis
 
         $buffer = '';
         $buffer .= '<center><table>';
+        $buffer .= '<tr><th colspan="4">Neck Essences</th></tr>';
         $buffer .= '<tr>';
-        $buffer .= '<th colspan="2">Primary Essences</th>';
-        $buffer .= '<th colspan="2">Secondary Essences</th>';
+        $buffer .= '<th colspan="2">Primary</th>';
+        $buffer .= '<th colspan="2">Secondary</th>';
         $buffer .= '</tr>';
         $buffer .= '<tr>';
         $buffer .= '<th>Name:</th>';
@@ -257,7 +260,15 @@ class HtmlSpecAnalysis
             }
         }
 
-        $talentLevels = array('15', '30', '45', '60', '75', '90', '100');
+        $talentLevels = array(
+            0 => '15',
+            1 => '30',
+            2 => '45',
+            3 => '60',
+            4 => '75',
+            5 => '90',
+            6 => '100'
+        );
 
         $col = 0;
         $row = '';
@@ -287,7 +298,7 @@ class HtmlSpecAnalysis
                 $ana->calculatePct($talentStats[$spellId], $talentCount)
             );
 
-            if ($col == 3) {
+            if ($col == 3 && array_key_exists($talentLevel, $talentLevels)) {
                 $talentHeader = '<th>' . $talentLevels[$talentLevel] . '</th>';
                 $buffer .= '<tr>' . $talentHeader . $row . "</tr>\n";
                 $col = 0;
@@ -305,6 +316,135 @@ class HtmlSpecAnalysis
         $buffer .= '</tr>';
         
         $buffer .= '</table></center>';
+
+        return $buffer;
+    }
+
+    public static function itemAnalysis(DoAnalysis $ana): string
+    {
+        $class = $ana->getClass();
+        $spec = $ana->getSpec();
+
+        
+        $count = $ana->getItemStats()->getCount();
+        $items = $ana->getItemStats()->getItems();
+
+        $content = '';
+
+        $titleRow = '';
+        $row1 = '';
+        $row2 = '';
+        $row3 = '';
+        $row4 = '';
+        $row5 = '';
+
+        $slotCount = 0;
+
+        foreach ($items as $slot => $itemUsage) {
+            if ($slotCount != 0 && ($slotCount % 5) == 0) {
+                if ($content != '') {
+                    $content .= '<br/>';
+                }
+                
+                $content .= sprintf(
+                    '<table>' .
+                    '  <tr>%s</tr>' .
+                    '  <tr>%s</tr>' .
+                    '  <tr>%s</tr>' .
+                    '  <tr>%s</tr>' .
+                    '  <tr>%s</tr>' .
+                    '  <tr>%s</tr>' .
+                    '</table>' . "\n",
+                    $titleRow,
+                    $row1,
+                    $row2,
+                    $row3,
+                    $row4,
+                    $row5,
+                );
+
+                $titleRow = '';
+                $row1 = '';
+                $row2 = '';
+                $row3 = '';
+                $row4 = '';
+                $row5 = '';
+            }
+
+            $slotCount++;
+            
+
+            
+            $titleRow .= '<th colspan="2">' . ucfirst($slot) . '</th>';
+            
+            arsort($itemUsage, SORT_NUMERIC);
+            
+            $showCount = 0;
+            foreach ($itemUsage as $itemId => $usageCount) {
+                $showCount++;
+
+                if ($showCount > 5) {
+                    continue;
+                }
+                
+                $pct = $ana->calculatePct($usageCount, $count);
+
+                $rowVar = 'row' . $showCount;
+
+                ${ $rowVar } .= sprintf(
+                    '<td>%d) <a href="https://www.wowhead.com/?item=%d" data-wowhead="item=%d">wowhead-provided-item-name</a></td>' .
+                    '<td>%d (%d%%)</td>',
+                    $showCount,
+                    $itemId,
+                    $itemId,
+                    $usageCount,
+                    $pct
+                );
+            }
+
+            if ($slot == 'neck') {
+                $row2 .= '<td colspan="2">&nbsp;</td>';
+                $row3 .= '<td colspan="2">&nbsp;</td>';
+                $row4 .= '<td colspan="2">&nbsp;</td>';
+                $row5 .= '<td colspan="2">&nbsp;</td>';
+            }
+        }
+
+        if ($titleRow != '') {
+            if ($content != '') {
+                $content .= '<br/>';
+            }
+            
+            $content .= sprintf(
+                '<table>' .
+                '  <tr>%s</tr>' .
+                '  <tr>%s</tr>' .
+                '  <tr>%s</tr>' .
+                '  <tr>%s</tr>' .
+                '  <tr>%s</tr>' .
+                '  <tr>%s</tr>' .
+                '</table>' . "\n",
+                $titleRow,
+                $row1,
+                $row2,
+                $row3,
+                $row4,
+                $row5,
+            );
+        }
+
+        $buffer = '';
+
+        $buffer .= sprintf(
+            '<h3>%s %s - Item analysis:</h3>',
+            ucwords(str_replace('-', ' ', $spec)),
+            ucwords(str_replace('-', ' ', $class)),
+            $spec
+        );
+
+        $buffer .= '<center>';
+        $buffer .= $content;
+        $buffer .= '</center>';
 
         return $buffer;
     }

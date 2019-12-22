@@ -25,4 +25,9 @@ class HtmlFooterBlock
         </center>
         </div>
   
-<script>switchClass("#death_knight_blood");<
+<script>switchClass("#death_knight_blood");</script>
+</body>
+</html>
+FOOTER;
+    }
+}

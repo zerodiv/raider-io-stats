@@ -3,6 +3,7 @@
 namespace RaiderIO\MythicPlus\SpecStats\Leaderboard;
 
 use RaiderIO\MythicPlus\SpecStats\Leaderboard\Base;
+use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\ItemStats;
 use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\MythicPlusScores;
 use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\NeckTraitStats;
 use RaiderIO\MythicPlus\SpecStats\Leaderboard\DoAnalysis\TalentStats;
@@ -14,6 +15,7 @@ class DoAnalysis extends Base
     private int $_characters;
     private int $_unavailable;
     
+    private ItemStats $_itemStats;
     private MythicPlusScores $_mythicPlusScores;
     private NeckTraitStats $_neckTraitStrats;
     private TalentStats $_talentStats;
@@ -26,6 +28,7 @@ class DoAnalysis extends Base
         $this->_characters = 0;
         $this->_unavailable = 0;
 
+        $this->_itemStats = new ItemStats();
         $this->_mythicPlusScores = new MythicPlusScores();
         $this->_neckTraitStrats = new NeckTraitStats();
         $this->_talentStats = new TalentStats();
@@ -46,6 +49,11 @@ class DoAnalysis extends Base
         return $this->_unavailable;
     }
 
+    public function getItemStats(): ItemStats
+    {
+        return $this->_itemStats;
+    }
+    
     public function getTalentStats(): TalentStats
     {
         return $this->_talentStats;
@@ -83,6 +91,10 @@ class DoAnalysis extends Base
             $this->walkJsonStructure($js);
         }
 
+        // Item stats are special in that there can be -alot- of them
+        // go ahead and trim it down to the top list as we don't want to
+        // carrry that memory forwards.
+        $this->getItemStats()->trimToTop();
         
 
         // var_dump($talentStats);
@@ -240,6 +252,10 @@ class DoAnalysis extends Base
             // items.neck.heart_of_azeroth.essences[]
             if (array_key_exists('items', $itemDetails)) {
                 $items = $itemDetails['items'];
+
+                // allow the item handler to process all of the items.
+
+                $this->_itemStats->handle($contentFile, $this->getClass(), $this->getSpec(), $items);
 
                 if (array_key_exists('neck', $items)) {
                     $neck = $items['neck'];
